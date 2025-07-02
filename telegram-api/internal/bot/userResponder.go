@@ -2,13 +2,14 @@ package rqhandler
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/broker"
 	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
 	"github.com/IBM/sarama"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -24,71 +25,70 @@ func NewConsumer(ctx context.Context, topic string) *Consumer {
 	}
 }
 
-func connectConsumer(brokers []string) (sarama.Consumer, error) {
+func createConsumerGroup(brokers []string) (sarama.ConsumerGroup, error) {
 	cfg := sarama.NewConfig()
 	cfg.Producer.Return.Errors = true
+	cfg.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategySticky()}
+	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	return sarama.NewConsumer(brokers, cfg)
+	return sarama.NewConsumerGroup(brokers, "example", cfg)
 }
 
 func (c *Consumer) Listen() error {
-	co, err := connectConsumer([]string{"localhost:9092"})
+	keepRunning := true
+
+	ctx, cancel := context.WithCancel(c.ctx)
+	client, err := createConsumerGroup([]string{"localhost:9092"})
 	if err != nil {
-		return err
+		cancel()
+		return errors.New("error creating consumer group client")
 	}
-	partitionConsumer, err := co.ConsumePartition(c.topic, 0, sarama.OffsetOldest)
-	if err != nil {
-		return err
+
+	consumer := broker.Consumer{
+		Ready: make(chan bool),
 	}
-	slog.InfoContext(c.ctx, "Consumer started")
 
-	count := 0
-
-	done := make(chan struct{})
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, os.Interrupt, syscall.SIGTERM)
-
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		defer close(done)
+		defer wg.Done()
 		for {
-			select {
-			case err := <-partitionConsumer.Errors():
-				slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred")
-				return
-
-			case _, ok := <-partitionConsumer.Messages():
-				if !ok {
-					slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred while claiming a message")
+			if err := client.Consume(ctx, []string{"tg_requests"}, &consumer); err != nil {
+				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					return
 				}
-				count++
-				slog.InfoContext(c.ctx, "Consumer received message", "msg_count", count)
-
-			case <-sigChannel:
-				slog.InfoContext(c.ctx, "Consumer shutting down by signal Ctrl+c")
+				slog.ErrorContext(utils.ErrorCtx(ctx, err), "Error from consumer")
+			}
+			if ctx.Err() != nil {
 				return
 			}
+			consumer.Ready = make(chan bool)
 		}
 	}()
 
-	<-done
-	slog.InfoContext(c.ctx, "Consumer shutting down")
-	if err = partitionConsumer.Close(); err != nil {
-		slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred while closing partitionConsumer")
+	<-consumer.Ready // Await till the consumer has been set up
+	slog.InfoContext(ctx, "Sarama consumer up and running!...")
+
+	sigterm := make(chan os.Signal, 1)
+	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
+
+	for keepRunning {
+		select {
+		case <-ctx.Done():
+			slog.InfoContext(ctx, "terminating: context cancelled")
+			keepRunning = false
+		case <-sigterm:
+			slog.InfoContext(ctx, "terminating: via signal")
+			keepRunning = false
+		}
 	}
 
-	return nil
-}
+	cancel()
+	wg.Wait()
+	slog.InfoContext(ctx, "Sarama consumer shutting down")
+	if err = client.Close(); err != nil {
+		slog.ErrorContext(utils.ErrorCtx(ctx, err), "Error closing client")
+	}
 
-func todo(msg *sarama.ConsumerMessage) error {
-	type message struct {
-		Request *tgbotapi.Message `json:"tg_request"`
-	}
-	m := message{}
-	err := json.Unmarshal(msg.Value, &m)
-	if err != nil {
-		return err
-	}
-	slog.InfoContext(context.TODO(), "Successfully consume a msg", "from", m.Request.From.UserName)
 	return nil
 }
