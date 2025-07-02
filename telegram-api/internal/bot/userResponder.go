@@ -36,7 +36,7 @@ func (c *Consumer) Listen() error {
 	if err != nil {
 		return err
 	}
-	consumer, err := co.ConsumePartition(c.topic, 0, sarama.OffsetOldest)
+	partitionConsumer, err := co.ConsumePartition(c.topic, 0, sarama.OffsetOldest)
 	if err != nil {
 		return err
 	}
@@ -49,28 +49,32 @@ func (c *Consumer) Listen() error {
 	signal.Notify(sigChannel, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
+		defer close(done)
 		for {
 			select {
-			case err := <-consumer.Errors():
+			case err := <-partitionConsumer.Errors():
 				slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred")
-			case _ = <-consumer.Messages():
+				return
+
+			case _, ok := <-partitionConsumer.Messages():
+				if !ok {
+					slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred while claiming a message")
+					return
+				}
 				count++
 				slog.InfoContext(c.ctx, "Consumer received message", "msg_count", count)
-				//err = todo(msg)
-				//if err != nil {
-				//	slog.ErrorContext(utils.ErrorCtx(context.TODO(), err), "Failed to unmarshall consumed msg")
-				//}
+
 			case <-sigChannel:
-				slog.InfoContext(c.ctx, "Consumer shutting down")
-				done <- struct{}{}
+				slog.InfoContext(c.ctx, "Consumer shutting down by signal Ctrl+c")
+				return
 			}
 		}
 	}()
 
 	<-done
 	slog.InfoContext(c.ctx, "Consumer shutting down")
-	if err = consumer.Close(); err != nil {
-		slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred while closing consumer")
+	if err = partitionConsumer.Close(); err != nil {
+		slog.ErrorContext(utils.ErrorCtx(c.ctx, err), "error occurred while closing partitionConsumer")
 	}
 
 	return nil
