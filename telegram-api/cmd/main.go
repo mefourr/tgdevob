@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gihub.com/mefourr/tgdevob/telegram-api/config"
 	rqhandler "gihub.com/mefourr/tgdevob/telegram-api/internal/bot"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/broker"
 	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
@@ -18,8 +19,12 @@ func main() {
 	slog.InfoContext(ctx, "Config loaded")
 
 	go func() {
-		con := rqhandler.NewConsumer(ctx, "tg_requests")
-		if err := con.Listen(); err != nil {
+		consumer := broker.NewConsumer(
+			[]string{"localhost:9092"},
+			"tg_requests",
+			"example",
+		)
+		if err := consumer.Consume(ctx); err != nil {
 			panic(err)
 		}
 	}()

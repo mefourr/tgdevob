@@ -100,7 +100,7 @@ func WrapError(ctx context.Context, err error) error {
 
 func ErrorCtx(ctx context.Context, err error) context.Context {
 	var e *errorWithLogCtx
-	if errors.As(err, &e) { // в реальной жизни используйте error.As
+	if errors.As(err, &e) {
 		return context.WithValue(ctx, key, e.ctx)
 	}
 	return ctx
