@@ -1,18 +1,15 @@
-package rqhandler
+package broker
 
 import (
 	"context"
 	"encoding/json"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/message"
 	"github.com/IBM/sarama"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
 )
 
 func Todo(ctx context.Context, msg *sarama.ConsumerMessage) {
-	type message struct {
-		Request *tgbotapi.Message `json:"tg_request"`
-	}
-	m := message{}
+	var m message.UserRequest
 	err := json.Unmarshal(msg.Value, &m)
 	if err != nil {
 		return

@@ -3,7 +3,6 @@ package broker
 import (
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/bot"
 	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
 	"github.com/IBM/sarama"
 	"golang.org/x/net/context"
@@ -49,7 +48,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			}
 			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 
-			rqhandler.Todo(session.Context(), message)
+			Todo(session.Context(), message)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
 			return nil

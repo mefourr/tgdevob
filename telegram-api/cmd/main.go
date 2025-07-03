@@ -49,7 +49,7 @@ func RunBot(ctx context.Context, cfg config.Config) {
 	slog.InfoContext(ctx, "Bot are listening")
 
 	for update := range updates {
-		slog.DebugContext(ctx, fmt.Sprintf("Update: %+v", update))
+		slog.DebugContext(ctx, fmt.Sprintf("New Update: %+v", update))
 		handler.ProcessUpdate(ctx, update, bot)
 	}
 }

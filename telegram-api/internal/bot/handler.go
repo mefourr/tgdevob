@@ -2,10 +2,9 @@ package rqhandler
 
 import (
 	"context"
-	"encoding/json"
 	"gihub.com/mefourr/tgdevob/telegram-api/config"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/broker"
 	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
-	"github.com/IBM/sarama"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
 )
@@ -25,14 +24,16 @@ func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot
 	}
 
 	if update.Message.Voice != nil {
+		slog.InfoContext(ctx, "Update has a voice message")
 		ctx = utils.WithLogUserName(ctx, update.Message.From.UserName)
 		ctx = utils.WithLogUserID(ctx, update.Message.From.ID)
 		ctx = utils.WithLogFileID(ctx, update.Message.Voice.FileID)
-		h.handleVoiceMessage(ctx, update, bot)
+		h.handleVoiceMessage(ctx, update)
 		return
 	}
 
 	if update.Message.Text != "" {
+		slog.InfoContext(ctx, "Update has a text message")
 		ctx = utils.WithLogUserName(ctx, update.Message.From.UserName)
 		h.handleTextMessage(ctx, update, bot)
 		return
@@ -41,53 +42,10 @@ func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot
 	slog.InfoContext(ctx, "Unrecognized message type", "update", update)
 }
 
-// stub
-func (h *Handler) handleVoiceMessage(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	slog.InfoContext(ctx, "Received voice message", "from", update.Message.From.UserName)
-	type message struct {
-		Request *tgbotapi.Message `json:"tg_request"`
-	}
-	mBytes, err := json.Marshal(message{
-		Request: update.Message,
-	})
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to marshal voice message", "error", err)
-	}
-
-	err = pushRequestToQueue("tg_requests", mBytes)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to push request to queue", "error", err)
-	}
-}
-
-func connectProducer(brokers []string) (sarama.SyncProducer, error) {
-	cfg := sarama.NewConfig()
-	cfg.Producer.RequiredAcks = sarama.WaitForAll
-	cfg.Producer.Return.Successes = true
-	cfg.Producer.Retry.Max = 5
-
-	return sarama.NewSyncProducer(brokers, cfg)
-}
-
-func pushRequestToQueue(topic string, message []byte) error {
-	// host of kafka container here
-	brokers := []string{"localhost:9092"}
-	producer, err := connectProducer(brokers)
-	if err != nil {
-		return err
-	}
-	defer producer.Close()
-
-	prodMessage := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.StringEncoder(message),
-	}
-	partition, offset, err := producer.SendMessage(prodMessage)
-	if err != nil {
-		return err
-	}
-	slog.InfoContext(context.TODO(), "Successfully sent message", "partition", partition, "offset", offset)
-	return nil
+func (h *Handler) handleVoiceMessage(ctx context.Context, update tgbotapi.Update) {
+	producer := broker.NewProducer("tg_requests", []string{"localhost:9092"})
+	slog.DebugContext(ctx, "Ready to produce a msg")
+	producer.ProduceMessage(ctx, update)
 }
 
 func (h *Handler) handleTextMessage(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
