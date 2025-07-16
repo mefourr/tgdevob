@@ -3,7 +3,7 @@ package rqhandler
 import (
 	"context"
 	"gihub.com/mefourr/tgdevob/telegram-api/config"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/broker"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka"
 	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
@@ -43,9 +43,9 @@ func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot
 }
 
 func (h *Handler) handleVoiceMessage(ctx context.Context, update tgbotapi.Update) {
-	producer := broker.NewProducer("tg_requests", []string{"localhost:9092"})
+	producer := kafka.NewProducer("tg_requests", []string{"localhost:9092"})
 	slog.DebugContext(ctx, "Ready to produce a msg")
-	producer.ProduceMessage(ctx, update)
+	producer.ProduceVoiceMessage(ctx, update)
 }
 
 func (h *Handler) handleTextMessage(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {

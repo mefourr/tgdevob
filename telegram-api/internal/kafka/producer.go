@@ -1,9 +1,8 @@
-package broker
+package kafka
 
 import (
 	"context"
 	"encoding/json"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/message"
 	"github.com/IBM/sarama"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
@@ -14,21 +13,20 @@ type Producer struct {
 	Brokers []string
 }
 
+type UserRequest struct {
+	Request *tgbotapi.Message `json:"tg_request"`
+}
+
 func NewProducer(topic string, brokers []string) *Producer {
 	return &Producer{Topic: topic, Brokers: brokers}
 }
 
-// TODO: come up with smt better
-func (p *Producer) ProduceMessage(ctx context.Context, rowMsg any) {
-	switch msg := rowMsg.(type) {
-	case tgbotapi.Update:
-		slog.DebugContext(ctx, "Message type is tgbotapi.Update")
-		userrq := message.NewUserRequest(msg.Message)
-		p.produce(ctx, userrq)
-	case string:
-		rs := message.NewResponse(msg)
-		p.produce(ctx, rs)
+// ProduceVoiceMessage TODO: come up with smt better
+func (p *Producer) ProduceVoiceMessage(ctx context.Context, update tgbotapi.Update) {
+	userrq := UserRequest{
+		Request: update.Message,
 	}
+	p.produce(ctx, userrq)
 }
 
 func (p *Producer) produce(ctx context.Context, message any) {
@@ -64,6 +62,7 @@ func (p *Producer) pushRequestToQueue(ctx context.Context, message []byte) error
 	return nil
 }
 
+// TODO: do once
 func createProducer(brokers []string) (sarama.SyncProducer, error) {
 	cfg := sarama.NewConfig()
 	cfg.Producer.RequiredAcks = sarama.WaitForAll

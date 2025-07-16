@@ -1,9 +1,9 @@
-package broker
+package kafka
 
 import (
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
+	"gihub.com/mefourr/tgdevob/worker/internal/utils"
 	"github.com/IBM/sarama"
 	"golang.org/x/net/context"
 	"log/slog"
@@ -13,20 +13,20 @@ import (
 	"syscall"
 )
 
+type Handler interface {
+	HandleTgUserMessage(ctx context.Context, msg *sarama.ConsumerMessage) error
+}
+
 type Consumer struct {
 	ready   chan bool
 	Brokers []string
 	Topic   string
 	Group   string
+	handler Handler
 }
 
-func NewConsumer(brokers []string, topic, group string) *Consumer {
-	return &Consumer{
-		ready:   make(chan bool),
-		Brokers: brokers,
-		Topic:   topic,
-		Group:   group,
-	}
+func NewConsumer(brokers []string, topic string, group string, handler Handler) *Consumer {
+	return &Consumer{ready: make(chan bool), Brokers: brokers, Topic: topic, Group: group, handler: handler}
 }
 
 func (c *Consumer) Setup(sarama.ConsumerGroupSession) error {
@@ -47,8 +47,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
-
-			Todo(session.Context(), message)
+			_ = c.handler.HandleTgUserMessage(context.Background(), message)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
 			return nil
@@ -61,6 +60,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 	defer cancel()
 
 	client, err := newConsumerGroup(c.Group, c.Brokers)
+	slog.InfoContext(ctx, "consumer group created")
 	if err != nil {
 		return fmt.Errorf("error creating consumer group client: %w", err)
 	}
