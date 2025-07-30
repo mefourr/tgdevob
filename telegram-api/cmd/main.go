@@ -14,6 +14,7 @@ func main() {
 	ctx := utils.Init()
 	slog.InfoContext(ctx, "Logger initialized")
 
+	// TODO: come up with smt better with config impl
 	cfg := config.LoadConfig(ctx)
 	slog.InfoContext(ctx, "Config loaded")
 
