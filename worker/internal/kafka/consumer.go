@@ -3,7 +3,8 @@ package kafka
 import (
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/worker/internal/utils"
+	"gihub.com/mefourr/tgdevob/worker/internal/handler/worker"
+	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
 	"golang.org/x/net/context"
 	"log/slog"
@@ -13,19 +14,20 @@ import (
 	"syscall"
 )
 
-type Handler interface {
-	HandleTgUserMessage(ctx context.Context, msg *sarama.ConsumerMessage) error
-}
+//type RedisEntity struct {
+//	User         UserDto
+//	LastUpdateId int
+//}
 
 type Consumer struct {
 	ready   chan bool
 	Brokers []string
 	Topic   string
 	Group   string
-	handler Handler
+	handler worker.Worker
 }
 
-func NewConsumer(brokers []string, topic string, group string, handler Handler) *Consumer {
+func NewConsumer(brokers []string, topic string, group string, handler TgRqHandler) *Consumer {
 	return &Consumer{ready: make(chan bool), Brokers: brokers, Topic: topic, Group: group, handler: handler}
 }
 
@@ -43,11 +45,12 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				slog.InfoContext(session.Context(), "message channel was closed")
+				slog.InfoContext(session.Context(), "worker channel was closed")
 				return nil
 			}
+
 			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
-			_ = c.handler.HandleTgUserMessage(context.Background(), message)
+			_ = c.handler.Process(context.Background(), message)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
 			return nil
@@ -66,7 +69,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 	}
 	defer func() {
 		if err := client.Close(); err != nil {
-			slog.ErrorContext(utils.ErrorCtx(ctx, err), "error closing consumer group client")
+			slog.ErrorContext(logging.ErrorCtx(ctx, err), "error closing consumer group client")
 		}
 	}()
 
@@ -78,13 +81,13 @@ func (c *Consumer) Consume(ctx context.Context) error {
 		for {
 			if err := client.Consume(ctx, []string{c.Topic}, c); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					slog.ErrorContext(utils.ErrorCtx(ctx, err), "consumer group closed by:", err)
+					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by:", err)
 					return
 				}
-				slog.ErrorContext(utils.ErrorCtx(ctx, err), "error from consumer")
+				slog.ErrorContext(logging.ErrorCtx(ctx, err), "error from consumer")
 			}
 			if ctx.Err() != nil {
-				slog.ErrorContext(utils.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation or deadline")
+				slog.ErrorContext(logging.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation or deadline")
 				return
 			}
 

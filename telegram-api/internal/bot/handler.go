@@ -19,12 +19,12 @@ func NewHandler(cfg config.Config) *Handler {
 
 func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if update.Message == nil {
-		slog.InfoContext(ctx, "Update does not contain a message")
+		slog.InfoContext(ctx, "Update does not contain a worker")
 		return
 	}
 
 	if update.Message.Voice != nil {
-		slog.InfoContext(ctx, "Update has a voice message")
+		slog.InfoContext(ctx, "Update has a voice worker")
 		ctx = utils.WithLogUserName(ctx, update.Message.From.UserName)
 		ctx = utils.WithLogUserID(ctx, update.Message.From.ID)
 		ctx = utils.WithLogFileID(ctx, update.Message.Voice.FileID)
@@ -33,13 +33,13 @@ func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot
 	}
 
 	if update.Message.Text != "" {
-		slog.InfoContext(ctx, "Update has a text message")
+		slog.InfoContext(ctx, "Update has a text worker")
 		ctx = utils.WithLogUserName(ctx, update.Message.From.UserName)
 		h.handleTextMessage(ctx, update, bot)
 		return
 	}
 
-	slog.InfoContext(ctx, "Unrecognized message type", "update", update)
+	slog.InfoContext(ctx, "Unrecognized worker type", "update", update)
 }
 
 func (h *Handler) handleVoiceMessage(ctx context.Context, update tgbotapi.Update) {
@@ -49,7 +49,7 @@ func (h *Handler) handleVoiceMessage(ctx context.Context, update tgbotapi.Update
 }
 
 func (h *Handler) handleTextMessage(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	slog.InfoContext(ctx, "Received message", "from", update.Message.From.UserName, "message", update.Message.Text)
+	slog.InfoContext(ctx, "Received worker", "from", update.Message.From.UserName, "worker", update.Message.Text)
 
 	stickerID := "CAACAgIAAxkBAAEPVdJoMI0T572X6QjdE0rIKPdp-uQgWwACYQADUomRI5wSPlG4RvGWNgQ"
 	sticker := tgbotapi.NewSticker(update.Message.Chat.ID, tgbotapi.FileID(stickerID))
