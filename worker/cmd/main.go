@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gihub.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"gihub.com/mefourr/tgdevob/worker/internal/kafka"
+	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
@@ -111,7 +112,7 @@ type UserHash struct {
 //}
 
 func main() {
-	ctx := utils.Init()
+	ctx := logging.Init()
 	slog.InfoContext(ctx, "Logger for consumer is initialized")
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",

@@ -27,7 +27,7 @@ type Consumer struct {
 	handler worker.Worker
 }
 
-func NewConsumer(brokers []string, topic string, group string, handler TgRqHandler) *Consumer {
+func NewConsumer(brokers []string, topic string, group string, handler worker.Worker) *Consumer {
 	return &Consumer{ready: make(chan bool), Brokers: brokers, Topic: topic, Group: group, handler: handler}
 }
 
