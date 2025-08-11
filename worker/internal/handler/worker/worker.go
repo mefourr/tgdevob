@@ -3,12 +3,15 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"gihub.com/mefourr/tgdevob/worker/internal/utils/msgutil"
 	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
-	"strconv"
+	"time"
 )
 
 type Worker interface {
@@ -25,38 +28,42 @@ func New(rdb *redis.Client) Worker {
 
 func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	// TODO: idempotency guarantee
-	m, err := takeMessage(msg)
+	m, err := msgutil.Parse(msg)
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to unmarshal worker")
 		return err
 	}
 
-	slog.InfoContext(ctx, "ready to search in redis")
 	var u cache.User
-	key := "user:" + strconv.FormatInt(m.User.ID, 10)
-	slog.InfoContext(ctx, "user has", "id", key)
-	val, err := h.rdb.Get(ctx, key).Result()
+	key := fmt.Sprintf("user:%d", m.User.ID)
+	slog.InfoContext(ctx, "ready to search in redis", "id", key)
 
-	if err != redis.Nil { // TODO: works bad
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to get user from redis")
+	res, err := h.rdb.Get(ctx, key).Result()
+
+	if errors.Is(err, redis.Nil) {
+		fmt.Println("key not found")
 		u = cache.User{
-			Id:        0,
-			TgUserId:  strconv.FormatInt(m.User.ID, 10),
-			UserName:  m.User.UserName,
-			FirstName: m.User.FirstName,
-			LastName:  m.User.LastName,
-			UpdateId:  m.UpdateId,
+			Id:          0,
+			TgUserId:    key,
+			UserName:    m.User.UserName,
+			FirstName:   m.User.FirstName,
+			LastName:    m.User.LastName,
+			UpdateId:    m.UpdateId,
+			LastRequest: m.Request,
 		}
-		cmd := h.rdb.HSet(ctx, "user:"+strconv.FormatInt(m.User.ID, 10), u)
-		i, err := cmd.Result()
+
+		bytes, err := json.Marshal(&u)
 		if err != nil {
-			slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to save user to redis", "Result", i)
-			return err
+			panic(err)
 		}
-		slog.InfoContext(ctx, "user's saved")
+		if err := h.rdb.Set(ctx, key, bytes, time.Minute).Err(); err != nil {
+			panic(err)
+		}
+	} else if err != nil {
+		panic(err)
 	} else {
-		if err = json.Unmarshal([]byte(val), &u); err != nil {
-			slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to save user to redis", "Unmarshal", val)
+		if err := json.Unmarshal([]byte(res), &u); err != nil {
+			panic(err)
 		}
 	}
 
@@ -67,13 +74,4 @@ func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) 
 	// TODO: recognition grpc
 	slog.InfoContext(ctx, "Successfully consume a msg", "from", m.Request.From.UserName)
 	return nil
-}
-
-func takeMessage(msg *sarama.ConsumerMessage) (*Message, error) {
-	var m *Message
-	err := json.Unmarshal(msg.Value, &m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
 }
