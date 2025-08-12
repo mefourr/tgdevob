@@ -14,11 +14,6 @@ import (
 	"syscall"
 )
 
-//type RedisEntity struct {
-//	User         UserDto
-//	LastUpdateId int
-//}
-
 type Consumer struct {
 	ready   chan bool
 	Brokers []string

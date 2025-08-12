@@ -19,11 +19,15 @@ type Worker interface {
 }
 
 type userRequest struct {
+	ca  *cache.Cache
 	rdb *redis.Client
 }
 
-func New(rdb *redis.Client) Worker {
-	return &userRequest{rdb: rdb}
+func New(ca *cache.Cache) Worker {
+	return &userRequest{
+		ca:  ca,
+		rdb: nil,
+	}
 }
 
 func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
@@ -34,10 +38,28 @@ func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) 
 		return err
 	}
 
-	var u cache.User
+	var u cache.User // TODO: encapsulate logic to cache package
 	key := fmt.Sprintf("user:%d", m.User.ID)
 	slog.InfoContext(ctx, "ready to search in redis", "id", key)
 
+	/*
+		user, err = func(ctx, key) (*cache.User, error) {
+			u, err = cache.Load(key)
+			if errors.Is(err, redis.Nil) {
+				entity, err := posgresql.GetUserById(key)
+				if err != nil {return nil, err}
+				u = cache.User{
+					entity.Id,
+					entity.Name,
+					entity.etc...
+			} else if err != nil {
+				return nil, err
+			}
+				_ := cache.Save(key, u, time.Minute)
+			}
+			return u, nil
+		}()
+	*/
 	res, err := h.rdb.Get(ctx, key).Result()
 
 	if errors.Is(err, redis.Nil) {

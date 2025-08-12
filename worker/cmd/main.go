@@ -4,6 +4,7 @@ import (
 	"context"
 	"gihub.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"gihub.com/mefourr/tgdevob/worker/internal/kafka"
+	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
 	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
@@ -36,7 +37,7 @@ func main() {
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(rdb),
+		worker.New(cache.New(rdb)),
 	)
 	if err := consumer.Consume(ctx); err != nil {
 		panic(err)
