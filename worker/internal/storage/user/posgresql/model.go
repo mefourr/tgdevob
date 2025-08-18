@@ -1,8 +1,9 @@
 package posgresql
 
 type User struct {
-	ID        int64  `json:"id"`
-	UserName  string `json:"username"`
-	FirstName string `json:"first_name"`
+	ID        string `json:"id"`
+	TgUserId  int    `json:"tg_uid"`
+	UserName  string `json:"login,omitempty"`
+	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 }

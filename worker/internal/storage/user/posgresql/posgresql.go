@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"log/slog"
+	"net"
 	"time"
 )
 
@@ -20,8 +21,10 @@ type Client interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func New(ctx context.Context, conf config.PostgresConfig) (pool *pgxpool.Pool, err error) {
-	dsn := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", conf.Username, conf.Password, conf.Hostname, conf.Port, conf.Database)
+func New(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Pool, err error) {
+	hp := net.JoinHostPort(conf.Hostname, conf.Port)
+	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", conf.Username, conf.Password, hp, conf.Database)
+	slog.InfoContext(ctx, "try to connect to psql by", "dsn", dsn)
 
 	err = utils.TryConn(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)

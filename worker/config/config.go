@@ -2,7 +2,7 @@ package config
 
 import "time"
 
-type PostgresConfig struct {
+type StorageConfig struct {
 	Username string
 	Password string
 	Hostname string
