@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gihub.com/mefourr/tgdevob/worker/config"
-	"gihub.com/mefourr/tgdevob/worker/internal/utils"
+	"gihub.com/mefourr/tgdevob/worker/internal/utils/repeatable"
 	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -26,12 +26,13 @@ func New(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Pool, er
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", conf.Username, conf.Password, hp, conf.Database)
 	slog.InfoContext(ctx, "try to connect to psql by", "dsn", dsn)
 
-	err = utils.TryConn(func() error {
+	err = repeatable.Connect(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
 		pool, err = pgxpool.New(ctx, dsn)
 		if err != nil {
+			slog.ErrorContext(logging.ErrorCtx(ctx, err), "Unable to create connection pool")
 			return err
 		}
 		if err = pool.Ping(ctx); err != nil {
@@ -43,7 +44,6 @@ func New(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Pool, er
 	}, conf)
 
 	if err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to TryConn")
 		return nil, err
 	}
 

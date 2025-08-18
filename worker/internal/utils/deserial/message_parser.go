@@ -1,4 +1,4 @@
-package msgutil
+package deserial
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"github.com/IBM/sarama"
 )
 
-func Parse(msg *sarama.ConsumerMessage) (message.Message, error) {
+func ParseMessage(msg *sarama.ConsumerMessage) (message.Message, error) {
 	var m message.Message
 	err := json.Unmarshal(msg.Value, &m)
 	if err != nil {

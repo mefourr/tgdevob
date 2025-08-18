@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
-	"gihub.com/mefourr/tgdevob/worker/internal/utils/msgutil"
+	"gihub.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
 	"github.com/redis/go-redis/v9"
@@ -32,7 +32,7 @@ func New(ca *cache.Cache) Worker {
 
 func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	// TODO: idempotency guarantee
-	m, err := msgutil.Parse(msg)
+	m, err := deserial.ParseMessage(msg)
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to unmarshal worker")
 		return err

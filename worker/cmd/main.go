@@ -36,7 +36,7 @@ func main() {
 	}
 	slog.InfoContext(ctx, "after setting redis up result is ", result)
 
-	_, err = posgresql.New(ctx, config.StorageConfig{
+	pool, err := posgresql.New(ctx, config.StorageConfig{
 		Username: "postgres",
 		Password: "admin",
 		Hostname: "localhost",
