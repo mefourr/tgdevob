@@ -48,7 +48,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	slog.InfoContext(ctx, "connection established")
+	defer pool.Close()
+	slog.InfoContext(ctx, "connection is established")
 
 	consumer := kafka.NewConsumer(
 		[]string{brokers},

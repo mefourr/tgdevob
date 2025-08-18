@@ -34,6 +34,10 @@ func New(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Pool, er
 		if err != nil {
 			return err
 		}
+		if err = pool.Ping(ctx); err != nil {
+			slog.ErrorContext(logging.ErrorCtx(ctx, err), "Unable to ping database")
+			return err
+		}
 
 		return nil
 	}, conf)
