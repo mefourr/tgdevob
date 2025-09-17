@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"gihub.com/mefourr/tgdevob/worker/config"
+	"gihub.com/mefourr/tgdevob/worker/internal/handler/userinfo"
 	"gihub.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"gihub.com/mefourr/tgdevob/worker/internal/kafka"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
@@ -50,6 +51,24 @@ func main() {
 	}
 	defer pool.Close()
 	slog.InfoContext(ctx, "connection is established")
+
+	// test
+	userInfo := userinfo.New(pool)
+	if err = userInfo.Create(ctx, &posgresql.User{
+		TgUserId:  0,
+		UserName:  "test",
+		FirstName: "test",
+		LastName:  "test",
+	}); err != nil {
+		slog.ErrorContext(ctx, err.Error())
+	}
+	slog.InfoContext(ctx, "user info created")
+	var users []posgresql.User
+	if users, err = userInfo.FindAll(ctx); err != nil {
+		slog.ErrorContext(ctx, err.Error())
+	}
+	slog.InfoContext(ctx, "after finding all users is ", users)
+	// end test
 
 	consumer := kafka.NewConsumer(
 		[]string{brokers},
