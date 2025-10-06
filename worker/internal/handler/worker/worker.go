@@ -2,16 +2,12 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"gihub.com/mefourr/tgdevob/worker/internal/handler/userinfo"
 	"gihub.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
-	"github.com/redis/go-redis/v9"
 	"log/slog"
-	"time"
 )
 
 type Worker interface {
@@ -19,15 +15,11 @@ type Worker interface {
 }
 
 type userRequest struct {
-	ca  *cache.Cache
-	rdb *redis.Client
+	loader userinfo.UserLoader
 }
 
-func New(ca *cache.Cache) Worker {
-	return &userRequest{
-		ca:  ca,
-		rdb: nil,
-	}
+func New(loader userinfo.UserLoader) Worker {
+	return &userRequest{loader: loader}
 }
 
 func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
@@ -38,58 +30,10 @@ func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) 
 		return err
 	}
 
-	var u cache.User // TODO: encapsulate logic to cache package
-	key := fmt.Sprintf("user:%d", m.User.ID)
-	slog.InfoContext(ctx, "ready to search in redis", "id", key)
-
-	/*
-		user, err = func(ctx, key) (*cache.User, error) {
-			u, err = cache.Load(key)
-			if errors.Is(err, redis.Nil) {
-				entity, err := posgresql.GetUserById(key)
-				if err != nil {return nil, err}
-				u = cache.User{
-					entity.Id,
-					entity.Name,
-					entity.etc...
-			} else if err != nil {
-				return nil, err
-			}
-				_ := cache.Save(key, u, time.Minute)
-			}
-			return u, nil
-		}()
-	*/
-	res, err := h.rdb.Get(ctx, key).Result()
-
-	if errors.Is(err, redis.Nil) {
-		fmt.Println("key not found")
-		u = cache.User{
-			Id:          0,
-			TgUserId:    key,
-			UserName:    m.User.UserName,
-			FirstName:   m.User.FirstName,
-			LastName:    m.User.LastName,
-			UpdateId:    m.UpdateId,
-			LastRequest: m.Request,
-		}
-
-		bytes, err := json.Marshal(&u)
-		if err != nil {
-			panic(err)
-		}
-		if err := h.rdb.Set(ctx, key, bytes, time.Minute).Err(); err != nil {
-			panic(err)
-		}
-	} else if err != nil {
-		panic(err)
-	} else {
-		if err := json.Unmarshal([]byte(res), &u); err != nil {
-			panic(err)
-		}
+	_, err = h.loader.LoadUser(ctx, m, fmt.Sprintf("user:%d", m.User.ID))
+	if err != nil {
+		return err
 	}
-
-	slog.InfoContext(ctx, "Work with: ", "user", u)
 	// TODO: cache user
 	// TODO: validate worker
 	// TODO: s3 grpc

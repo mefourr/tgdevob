@@ -37,7 +37,7 @@ func main() {
 	}
 	slog.InfoContext(ctx, "after setting redis up result is ", result)
 
-	pool, err := posgresql.New(ctx, config.StorageConfig{
+	pool, err := posgresql.NewClient(ctx, config.StorageConfig{
 		Username: "postgres",
 		Password: "admin",
 		Hostname: "localhost",
@@ -50,31 +50,15 @@ func main() {
 		panic(err)
 	}
 	defer pool.Close()
-	slog.InfoContext(ctx, "connection is established")
-
-	// test
-	userInfo := userinfo.New(pool)
-	if err = userInfo.Create(ctx, &posgresql.User{
-		TgUserId:  0,
-		UserName:  "test",
-		FirstName: "test",
-		LastName:  "test",
-	}); err != nil {
-		slog.ErrorContext(ctx, err.Error())
-	}
-	slog.InfoContext(ctx, "user info created")
-	var users []posgresql.User
-	if users, err = userInfo.FindAll(ctx); err != nil {
-		slog.ErrorContext(ctx, err.Error())
-	}
-	slog.InfoContext(ctx, "after finding all users is ", users)
-	// end test
 
 	consumer := kafka.NewConsumer(
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(cache.New(rdb)),
+		worker.New(userinfo.UserLoader{
+			Cache:    cache.New(rdb),
+			Postgres: posgresql.New(pool),
+		}),
 	)
 	if err := consumer.Consume(ctx); err != nil {
 		panic(err)

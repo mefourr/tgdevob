@@ -3,26 +3,44 @@ package userinfo
 import (
 	"context"
 	"errors"
+	"gihub.com/mefourr/tgdevob/worker/internal/kafka/message"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
 	"github.com/redis/go-redis/v9"
 )
 
-type CachedUser interface {
-	Load(context.Context, string) (*cache.User, bool)
+type UserLoader struct {
+	Cache    *cache.Cache
+	Postgres posgresql.UserRepository
 }
 
-func LoadUser(ctx context.Context, ca cache.Cache, key string) (*cache.User, error) {
-	_, err := ca.Load(ctx, key)
+type CachedUser interface {
+	Load(context.Context, string) (*cache.User, error)
+}
+
+type LoadedUser interface {
+	FindById(context.Context, string) (posgresql.User, error)
+}
+
+func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error) {
+	u, err := ui.Cache.Load(ctx, key)
 	if errors.Is(err, redis.Nil) {
-		//entity, err := posgresql.GetUserById(key)
-		//if err != nil {return nil, err}
-		//u = cache.User{
-		//	entity.Id,
-		//	entity.Name,
-		//	entity.etc...
+		entity, err := ui.Postgres.FindById(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		u = &cache.User{
+			Id:          entity.ID,
+			TgUserId:    entity.TgUserId,
+			UserName:    entity.UserName,
+			FirstName:   entity.FirstName,
+			LastName:    entity.LastName,
+			UpdateId:    msg.UpdateId,
+			LastRequest: msg.Request, // TODO: it doesn't work. may be should be deleted
+		}
+		go ui.Cache.Save(*u)
 	} else if err != nil {
 		return nil, err
 	}
-	//_ := ca.Store(ctx, key, u, time.Minute)
-	panic("implement me")
+	return u, nil
 }

@@ -21,7 +21,7 @@ type Client interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func New(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Pool, err error) {
+func NewClient(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Pool, err error) {
 	hp := net.JoinHostPort(conf.Hostname, conf.Port)
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", conf.Username, conf.Password, hp, conf.Database)
 	slog.InfoContext(ctx, "try to connect to psql by", "dsn", dsn)

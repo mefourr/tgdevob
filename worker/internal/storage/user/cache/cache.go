@@ -34,7 +34,7 @@ func (c *Cache) Load(ctx context.Context, id string) (*User, error) {
 	return &u, nil
 }
 
-func (c *Cache) Save(user User) error {
+func (c *Cache) Save(user User) {
 	//TODO implement me
 	panic("implement me")
 }

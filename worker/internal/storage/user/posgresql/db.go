@@ -1,35 +1,34 @@
-package userinfo
+package posgresql
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
 	"github.com/jackc/pgx/v5/pgconn"
 	"log/slog"
 )
 
-type UserInfo interface {
-	Create(ctx context.Context, user *posgresql.User) error
-	FindAll(ctx context.Context) (u []posgresql.User, err error)
-	FindById(ctx context.Context, id string) (posgresql.User, error)
-	Update(ctx context.Context, user posgresql.User) error
+type UserRepository interface {
+	Create(ctx context.Context, user *User) error
+	FindAll(ctx context.Context) (u []User, err error)
+	FindById(ctx context.Context, id string) (User, error)
+	Update(ctx context.Context, user User) error
 	Delete(ctx context.Context, id string) error
 }
 
-type db struct {
-	Client posgresql.Client
+type repository struct {
+	Client Client
 }
 
-func New(client posgresql.Client) UserInfo {
-	return &db{Client: client}
+func New(client Client) UserRepository {
+	return &repository{Client: client}
 }
 
 func formatQuery(query string) string {
 	panic("implement me")
 }
 
-func (d db) Create(ctx context.Context, user *posgresql.User) error {
+func (d repository) Create(ctx context.Context, user *User) error {
 	// TODO: do fields validation on up level
 	q := `
 		INSERT INTO 
@@ -51,7 +50,7 @@ func (d db) Create(ctx context.Context, user *posgresql.User) error {
 	return nil
 }
 
-func (d db) FindAll(ctx context.Context) (u []posgresql.User, err error) {
+func (d repository) FindAll(ctx context.Context) (u []User, err error) {
 	q := `
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
@@ -64,9 +63,9 @@ func (d db) FindAll(ctx context.Context) (u []posgresql.User, err error) {
 		return nil, err
 	}
 
-	users := make([]posgresql.User, 0)
+	users := make([]User, 0)
 	for query.Next() {
-		var u posgresql.User
+		var u User
 		if err = query.Scan(&u.ID, &u.TgUserId, &u.UserName, &u.FirstName, &u.LastName); err != nil {
 			return nil, err
 		}
@@ -80,7 +79,7 @@ func (d db) FindAll(ctx context.Context) (u []posgresql.User, err error) {
 	return users, nil
 }
 
-func (d db) FindById(ctx context.Context, id string) (posgresql.User, error) {
+func (d repository) FindById(ctx context.Context, id string) (User, error) {
 	q := `
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
@@ -89,17 +88,17 @@ func (d db) FindById(ctx context.Context, id string) (posgresql.User, error) {
 	`
 	slog.DebugContext(ctx, "SQL Query:", q)
 
-	var u posgresql.User
+	var u User
 	if err := d.Client.QueryRow(ctx, q, id).Scan(
 		&u.ID, &u.TgUserId, &u.UserName, &u.FirstName, &u.LastName,
 	); err != nil {
-		return posgresql.User{}, err
+		return User{}, err
 	}
 
 	return u, nil
 }
 
-func (d db) Update(ctx context.Context, user posgresql.User) error {
+func (d repository) Update(ctx context.Context, user User) error {
 	_ = `
 		UPDATE public.tg_users
 		SET tg_uid = $1, login = $2, first_name = $3, last_name = $4
@@ -110,7 +109,7 @@ func (d db) Update(ctx context.Context, user posgresql.User) error {
 	panic("implement me")
 }
 
-func (d db) Delete(ctx context.Context, id string) error {
+func (d repository) Delete(ctx context.Context, id string) error {
 	_ = `
 		DELETE FROM public.tg_users WHERE id = $1
 	` // TODO: or add a flag isDeleted
