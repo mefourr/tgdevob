@@ -6,7 +6,9 @@ import (
 	"gihub.com/mefourr/tgdevob/worker/internal/kafka/message"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
+	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
+	"log/slog"
 )
 
 type UserLoader struct {
@@ -27,6 +29,7 @@ func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key str
 	if errors.Is(err, redis.Nil) {
 		entity, err := ui.Postgres.FindById(ctx, key)
 		if err != nil {
+			slog.ErrorContext(logging.ErrorCtx(ctx, err), "smth went wrong while finding by id", err)
 			return nil, err
 		}
 		u = &cache.User{
@@ -36,11 +39,14 @@ func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key str
 			FirstName:   entity.FirstName,
 			LastName:    entity.LastName,
 			UpdateId:    msg.UpdateId,
-			LastRequest: msg.Request, // TODO: it doesn't work. may be should be deleted
+			LastRequest: msg.Request, // TODO: it doesn't work. maybe should be deleted
 		}
-		go ui.Cache.Save(*u)
+		go ui.Cache.Save(ctx, *u)
 	} else if err != nil {
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "smth went wrong while loading user", err)
 		return nil, err
 	}
+
+	slog.DebugContext(ctx, "loaded user", ":", u)
 	return u, nil
 }

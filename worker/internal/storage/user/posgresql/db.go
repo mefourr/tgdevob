@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/jackc/pgx/v5/pgconn"
 	"log/slog"
 )
@@ -56,7 +57,7 @@ func (d repository) FindAll(ctx context.Context) (u []User, err error) {
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
 		FROM public.tg_users u
 	`
-	slog.DebugContext(ctx, "SQL", "query", q)
+	slog.DebugContext(ctx, "SQL query", ":", q)
 
 	query, err := d.Client.Query(ctx, q)
 	if err != nil {
@@ -84,17 +85,19 @@ func (d repository) FindById(ctx context.Context, id string) (User, error) {
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
 		FROM public.tg_users u
-		WHERE id = $1
+		WHERE u.tg_uid = $1
 	`
-	slog.DebugContext(ctx, "SQL Query:", q)
+	slog.DebugContext(ctx, "SQL Query", ":", q, "id:", id)
 
 	var u User
 	if err := d.Client.QueryRow(ctx, q, id).Scan(
 		&u.ID, &u.TgUserId, &u.UserName, &u.FirstName, &u.LastName,
 	); err != nil {
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "SQL Query", ":", err.Error())
 		return User{}, err
 	}
 
+	slog.DebugContext(ctx, "Retrieved entity", "user", u)
 	return u, nil
 }
 
