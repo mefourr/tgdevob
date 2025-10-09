@@ -1,4 +1,4 @@
-package userinfo
+package userloader
 
 import (
 	"context"
@@ -24,8 +24,8 @@ type LoadedUser interface {
 	FindById(context.Context, string) (posgresql.User, error)
 }
 
-func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error) {
-	u, err := ui.Cache.Load(ctx, key)
+func (ul *UserLoader) LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error) {
+	u, err := ul.Cache.Load(ctx, key)
 
 	if err != nil && !errors.Is(err, redis.Nil) {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user from cache", "key", key)
@@ -33,7 +33,7 @@ func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key str
 	}
 
 	if errors.Is(err, redis.Nil) {
-		entity, err := ui.Postgres.FindById(ctx, key)
+		entity, err := ul.Postgres.FindById(ctx, key)
 		if err != nil {
 			slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to find user by ID", "key", key)
 			return nil, err
@@ -50,7 +50,7 @@ func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key str
 		}
 
 		go func() {
-			if err := ui.Cache.Save(ctx, u); err != nil {
+			if err := ul.Cache.Save(ctx, u); err != nil {
 				slog.WarnContext(ctx, "failed to save user to cache", "key", key, "error", err)
 			}
 		}()
