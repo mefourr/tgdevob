@@ -12,12 +12,12 @@ import (
 )
 
 type UserLoader struct {
-	Cache    *cache.Cache
+	Cache    cache.UserCache
 	Postgres posgresql.UserRepository
 }
 
 type CachedUser interface {
-	Load(context.Context, string) (*cache.User, error)
+	Load(context.Context, string) (cache.User, error)
 }
 
 type LoadedUser interface {
@@ -26,27 +26,36 @@ type LoadedUser interface {
 
 func (ui *UserLoader) LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error) {
 	u, err := ui.Cache.Load(ctx, key)
+
+	if err != nil && !errors.Is(err, redis.Nil) {
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user from cache", "key", key)
+		return nil, err
+	}
+
 	if errors.Is(err, redis.Nil) {
 		entity, err := ui.Postgres.FindById(ctx, key)
 		if err != nil {
-			slog.ErrorContext(logging.ErrorCtx(ctx, err), "smth went wrong while finding by id", err)
+			slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to find user by ID", "key", key)
 			return nil, err
 		}
-		u = &cache.User{
+
+		u = cache.User{
 			Id:          entity.ID,
 			TgUserId:    entity.TgUserId,
 			UserName:    entity.UserName,
 			FirstName:   entity.FirstName,
 			LastName:    entity.LastName,
 			UpdateId:    msg.UpdateId,
-			LastRequest: msg.Request, // TODO: it doesn't work. maybe should be deleted
+			LastRequest: msg.Request, // TODO: review if needed
 		}
-		go ui.Cache.Save(ctx, *u)
-	} else if err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "smth went wrong while loading user", err)
-		return nil, err
+
+		go func() {
+			if err := ui.Cache.Save(ctx, u); err != nil {
+				slog.WarnContext(ctx, "failed to save user to cache", "key", key, "error", err)
+			}
+		}()
 	}
 
-	slog.DebugContext(ctx, "loaded user", ":", u)
-	return u, nil
+	slog.DebugContext(ctx, "loaded user", "key", key, "user", u)
+	return &u, nil
 }

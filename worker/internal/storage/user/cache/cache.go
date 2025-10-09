@@ -11,45 +11,51 @@ import (
 	"time"
 )
 
-type Cache struct {
+type UserCache interface {
+	Load(ctx context.Context, key string) (User, error)
+	Save(ctx context.Context, user User) error
+}
+
+type cache struct {
 	rdb *redis.Client
 }
 
-func New(rdb *redis.Client) *Cache {
-	return &Cache{rdb: rdb}
+func New(rdb *redis.Client) UserCache {
+	return &cache{rdb: rdb}
 }
 
-func (c *Cache) Load(ctx context.Context, key string) (*User, error) {
+func (c *cache) Load(ctx context.Context, key string) (User, error) {
 	res, err := c.rdb.Get(ctx, key).Result()
 
 	if errors.Is(err, redis.Nil) {
-		return nil, redis.Nil
+		return User{}, redis.Nil
 	}
 
 	var u User
 
 	if err := json.Unmarshal([]byte(res), &u); err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "Unmarshalling user from Redis")
-		return nil, err
+		return User{}, err
 	}
 
 	slog.DebugContext(ctx, "Unmarshalling user from Redis", "user", u)
-	return &u, nil
+	return u, nil
 }
 
-func (c *Cache) Save(ctx context.Context, user User) {
+func (c *cache) Save(ctx context.Context, user User) error {
 	bytes, err := json.Marshal(&user)
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "error while marshalling user", err)
-		panic(err)
+		return err
 	}
 
 	// TODO: add timeout for ctx
 	key := strconv.FormatInt(user.TgUserId, 10)
 	if err = c.rdb.Set(ctx, key, bytes, time.Minute).Err(); err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "error while saving user to Redis")
-		panic(err)
+		return err
 	}
 
 	slog.DebugContext(ctx, "Saving user to Redis", "key", key, "user", user)
+	return nil
 }
