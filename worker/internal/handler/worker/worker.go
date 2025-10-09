@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"gihub.com/mefourr/tgdevob/worker/internal/handler/userinfo"
+	s "gihub.com/mefourr/tgdevob/worker/internal/handler/userloader"
 	"gihub.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
@@ -15,14 +15,14 @@ type Worker interface {
 }
 
 type userRequest struct {
-	loader userinfo.UserLoader
+	loader userloader.UserLoader
 }
 
-func New(loader userinfo.UserLoader) Worker {
+func New(loader userloader.UserLoader) Worker {
 	return &userRequest{loader: loader}
 }
 
-func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
+func (ur *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	// TODO: idempotency guarantee
 	m, err := deserial.ParseMessage(msg)
 	if err != nil {
@@ -33,7 +33,7 @@ func (h *userRequest) Process(ctx context.Context, msg *sarama.ConsumerMessage) 
 	// TODO: cache user
 	// TODO: noticed that messages continue to be sent if panic occurs - maybe it can overload a cache handler
 	// --- throw a panic while caching to see behavior
-	_, err = h.loader.LoadUser(ctx, m, strconv.FormatInt(m.User.ID, 10))
+	_, err = ur.loader.LoadUser(ctx, m, strconv.FormatInt(m.User.ID, 10))
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user")
 		return err

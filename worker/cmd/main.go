@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"gihub.com/mefourr/tgdevob/worker/config"
-	"gihub.com/mefourr/tgdevob/worker/internal/handler/userinfo"
+	"gihub.com/mefourr/tgdevob/worker/internal/handler/userloader"
 	"gihub.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"gihub.com/mefourr/tgdevob/worker/internal/kafka"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
@@ -55,7 +55,7 @@ func main() {
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(userinfo.UserLoader{
+		worker.New(userloader.UserLoader{
 			Cache:    cache.New(rdb),
 			Postgres: posgresql.New(pool),
 		}),

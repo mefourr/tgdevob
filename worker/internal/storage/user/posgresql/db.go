@@ -29,7 +29,7 @@ func formatQuery(query string) string {
 	panic("implement me")
 }
 
-func (d repository) Create(ctx context.Context, user *User) error {
+func (d *repository) Create(ctx context.Context, user *User) error {
 	// TODO: do fields validation on up level
 	q := `
 		INSERT INTO 
@@ -51,7 +51,7 @@ func (d repository) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (d repository) FindAll(ctx context.Context) (u []User, err error) {
+func (d *repository) FindAll(ctx context.Context) (u []User, err error) {
 	q := `
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
@@ -80,7 +80,7 @@ func (d repository) FindAll(ctx context.Context) (u []User, err error) {
 	return users, nil
 }
 
-func (d repository) FindById(ctx context.Context, id string) (User, error) {
+func (d *repository) FindById(ctx context.Context, id string) (User, error) {
 	q := `
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
@@ -101,7 +101,7 @@ func (d repository) FindById(ctx context.Context, id string) (User, error) {
 	return u, nil
 }
 
-func (d repository) Update(ctx context.Context, user User) error {
+func (d *repository) Update(ctx context.Context, user User) error {
 	_ = `
 		UPDATE public.tg_users
 		SET tg_uid = $1, login = $2, first_name = $3, last_name = $4
@@ -112,7 +112,7 @@ func (d repository) Update(ctx context.Context, user User) error {
 	panic("implement me")
 }
 
-func (d repository) Delete(ctx context.Context, id string) error {
+func (d *repository) Delete(ctx context.Context, id string) error {
 	_ = `
 		DELETE FROM public.tg_users WHERE id = $1
 	` // TODO: or add a flag isDeleted
