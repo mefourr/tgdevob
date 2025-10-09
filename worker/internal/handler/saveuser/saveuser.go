@@ -2,9 +2,9 @@ package saveuser
 
 import (
 	"context"
+	"errors"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
 	"time"
@@ -31,7 +31,10 @@ func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, er
 	}
 
 	if err := w.Postgres.Create(ctx, u); err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to create user in postgres", "tgUserId", data.ID)
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			slog.WarnContext(ctx, "database request timed out", "ID", u.ID)
+			return "n/a", ctx.Err()
+		}
 		return "n/a", err
 	}
 
