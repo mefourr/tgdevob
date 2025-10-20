@@ -33,9 +33,9 @@ func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, er
 	if err := w.Postgres.Create(ctx, u); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			slog.WarnContext(ctx, "database request timed out", "ID", u.ID)
-			return "n/a", ctx.Err()
+			return "", ctx.Err()
 		}
-		return "n/a", err
+		return "", err
 	}
 
 	// TODO: immediately add to cache
