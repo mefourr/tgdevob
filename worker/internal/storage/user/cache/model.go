@@ -10,4 +10,5 @@ type User struct {
 	LastName    *string           `redis:"tg_user_last_name"`
 	UpdateId    int               `redis:"update_id"`
 	LastRequest *tgbotapi.Message `redis:"last_request"`
+	IsNonCached bool              `redis:"is_fresh"`
 }

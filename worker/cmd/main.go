@@ -55,10 +55,10 @@ func main() {
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(userloader.UserLoader{
-			Cache:    cache.New(rdb),
-			Postgres: posgresql.New(pool),
-		}),
+		worker.New(userloader.New(
+			cache.New(rdb),
+			posgresql.New(pool),
+		)),
 	)
 	if err := consumer.Consume(ctx); err != nil {
 		panic(err)

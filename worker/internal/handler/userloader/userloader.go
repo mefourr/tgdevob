@@ -11,21 +11,31 @@ import (
 	"log/slog"
 )
 
-type UserLoader struct {
+type Client interface {
+	LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error)
+	SaveUser(ctx context.Context, u *cache.User)
+}
+
+type clientRetriever struct {
 	Cache    cache.UserCache
 	Postgres posgresql.UserRepository
 }
 
-type CachedUser interface {
-	Load(context.Context, string) (cache.User, error)
+func New(cache cache.UserCache, postgres posgresql.UserRepository) Client {
+	return &clientRetriever{Cache: cache, Postgres: postgres}
 }
 
-type LoadedUser interface {
+type CachedUser interface {
+	Load(context.Context, string) (cache.User, error)
+	Save(context.Context, cache.User) error
+}
+
+type PgUserLoader interface {
 	FindById(context.Context, string) (posgresql.User, error)
 }
 
-func (ul *UserLoader) LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error) {
-	u, err := ul.Cache.Load(ctx, key)
+func (cr *clientRetriever) LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error) {
+	u, err := cr.Cache.Load(ctx, key)
 
 	if err != nil && !errors.Is(err, redis.Nil) {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user from cache", "key", key)
@@ -33,7 +43,7 @@ func (ul *UserLoader) LoadUser(ctx context.Context, msg message.Message, key str
 	}
 
 	if errors.Is(err, redis.Nil) {
-		entity, err := ul.Postgres.FindById(ctx, key)
+		entity, err := cr.Postgres.FindById(ctx, key)
 		if err != nil {
 			slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to find user by ID", "key", key)
 			return nil, err
@@ -47,15 +57,19 @@ func (ul *UserLoader) LoadUser(ctx context.Context, msg message.Message, key str
 			LastName:    entity.LastName,
 			UpdateId:    msg.UpdateId,
 			LastRequest: msg.Request, // TODO: review if needed
+			IsNonCached: true,
 		}
-
-		go func() {
-			if err := ul.Cache.Save(ctx, u); err != nil {
-				slog.WarnContext(ctx, "failed to save user to cache", "key", key, "error", err)
-			}
-		}()
+		//go cr.SaveUser(ctx, u, key)
 	}
 
 	slog.DebugContext(ctx, "loaded user", "key", key, "user", u)
 	return &u, nil
+}
+
+func (cr *clientRetriever) SaveUser(ctx context.Context, u *cache.User) {
+	u.IsNonCached = false
+	if err := cr.Cache.Save(ctx, *u); err != nil {
+		slog.WarnContext(ctx, "failed to save user to cache", "key", u.TgUserId, "error", err)
+		u.IsNonCached = true
+	}
 }
