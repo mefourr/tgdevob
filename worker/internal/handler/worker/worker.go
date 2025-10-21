@@ -54,7 +54,10 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 	// means i have to check voice message time maybe smth else
 
 	// TODO: s3 grpc
+	// storage for voice message. Im gonna use yandex s3 object storage
+
 	// TODO: recognition grpc
+	// recognition service. Im gonna use yandex stt service
 	slog.InfoContext(ctx, "Successfully consume a msg", "from", m.Request.From.ID)
 	return nil
 }
