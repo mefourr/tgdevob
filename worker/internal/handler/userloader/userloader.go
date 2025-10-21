@@ -13,7 +13,9 @@ import (
 
 type Client interface {
 	LoadUser(ctx context.Context, msg message.Message, key string) (*cache.User, error)
-	SaveUser(ctx context.Context, u *cache.User)
+	SaveOrUpdateUser(ctx context.Context, u *cache.User)
+	// SaveUserLastRequest just save Request as last before user caching
+	SaveUserLastRequest(u *cache.User, msg message.Message)
 }
 
 type clientRetriever struct {
@@ -59,17 +61,21 @@ func (cr *clientRetriever) LoadUser(ctx context.Context, msg message.Message, ke
 			LastRequest: msg.Request, // TODO: review if needed
 			IsNonCached: true,
 		}
-		//go cr.SaveUser(ctx, u, key)
+		//go cr.SaveOrUpdateUser(ctx, u, key)
 	}
 
 	slog.DebugContext(ctx, "loaded user", "key", key, "user", u)
 	return &u, nil
 }
 
-func (cr *clientRetriever) SaveUser(ctx context.Context, u *cache.User) {
+func (cr *clientRetriever) SaveOrUpdateUser(ctx context.Context, u *cache.User) {
 	u.IsNonCached = false
 	if err := cr.Cache.Save(ctx, *u); err != nil {
 		slog.WarnContext(ctx, "failed to save user to cache", "key", u.TgUserId, "error", err)
 		u.IsNonCached = true
 	}
+}
+
+func (cr *clientRetriever) SaveUserLastRequest(u *cache.User, msg message.Message) {
+	u.LastRequest = msg.Request
 }
