@@ -5,10 +5,7 @@ import (
 	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
 )
 
+// Validate returns true if tgbotapi.Message.MessageID mismatched
 func Validate(u *cache.User, msg message.Message) bool {
-	if u.LastRequest.MessageID != msg.Request.MessageID {
-		u.LastRequest = msg.Request
-		return true
-	}
-	return false
+	return u.LastRequest.MessageID != msg.Request.MessageID
 }
