@@ -47,11 +47,12 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 	}
 
 	slog.InfoContext(ctx, "updating user cache", "user", u)
+
 	rqw.client.SaveUserLastRequest(u, m)
 	go rqw.client.SaveOrUpdateUser(ctx, u)
 
 	// TODO: validate worker
-	// means i have to check voice message time maybe smth else
+	// audio length and error to user bout validating error
 
 	// TODO: s3 grpc
 	// storage for voice message. Im gonna use yandex s3 object storage
