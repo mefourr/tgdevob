@@ -15,7 +15,7 @@ import (
 )
 
 type Consumer struct {
-	ready   chan bool
+	ready   chan struct{}
 	Brokers []string
 	Topic   string
 	Group   string
@@ -23,7 +23,7 @@ type Consumer struct {
 }
 
 func NewConsumer(brokers []string, topic string, group string, handler worker.Worker) *Consumer {
-	return &Consumer{ready: make(chan bool), Brokers: brokers, Topic: topic, Group: group, handler: handler}
+	return &Consumer{ready: make(chan struct{}), Brokers: brokers, Topic: topic, Group: group, handler: handler}
 }
 
 func (c *Consumer) Setup(sarama.ConsumerGroupSession) error {
@@ -45,6 +45,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 			}
 
 			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+
 			_ = c.handler.Process(context.Background(), message)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
@@ -58,10 +59,11 @@ func (c *Consumer) Consume(ctx context.Context) error {
 	defer cancel()
 
 	client, err := newConsumerGroup(c.Group, c.Brokers)
-	slog.InfoContext(ctx, "consumer group created")
 	if err != nil {
 		return fmt.Errorf("error creating consumer group client: %w", err)
 	}
+	slog.InfoContext(ctx, "consumer group created")
+
 	defer func() {
 		if err := client.Close(); err != nil {
 			slog.ErrorContext(logging.ErrorCtx(ctx, err), "error closing consumer group client")
@@ -81,12 +83,13 @@ func (c *Consumer) Consume(ctx context.Context) error {
 				}
 				slog.ErrorContext(logging.ErrorCtx(ctx, err), "error from consumer")
 			}
+
 			if ctx.Err() != nil {
-				slog.ErrorContext(logging.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation or deadline")
+				slog.ErrorContext(logging.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation")
 				return
 			}
 
-			c.ready = make(chan bool)
+			c.ready = make(chan struct{})
 		}
 	}()
 
