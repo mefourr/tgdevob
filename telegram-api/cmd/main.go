@@ -5,18 +5,34 @@ import (
 	"fmt"
 	"gihub.com/mefourr/tgdevob/telegram-api/config"
 	rqhandler "gihub.com/mefourr/tgdevob/telegram-api/internal/bot"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/utils"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer"
+	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer/startup"
+	"gihub.com/mefourr/tgdevob/telegram-api/pkg/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log/slog"
 )
 
 func main() {
-	ctx := utils.Init()
+	ctx := logging.Init()
 	slog.InfoContext(ctx, "Logger initialized")
 
 	// TODO: come up with smt better with config impl
 	cfg := config.LoadConfig(ctx)
 	slog.InfoContext(ctx, "Config loaded")
+
+	bc := &startup.BaseConsumer{
+		Ready:   make(chan struct{}),
+		Brokers: []string{"localhost:9092"}, // TODO: must be replaced
+		Group:   "tg-cons",
+	}
+	if err := consumer.New(bc, "invalidated_user_messages", struct{}{}).
+		Consume(ctx); err != nil {
+		panic(err)
+	}
+	if err := consumer.New(bc, "processed_user_messages", struct{}{}).
+		Consume(ctx); err != nil {
+		panic(err)
+	}
 
 	RunBot(ctx, *cfg)
 }
