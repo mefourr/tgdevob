@@ -25,14 +25,13 @@ func main() {
 		Brokers: []string{"localhost:9092"}, // TODO: must be replaced
 		Group:   "tg-cons",
 	}
-	if err := consumer.New(bc, "invalidated_user_messages", struct{}{}).
-		Consume(ctx); err != nil {
-		panic(err)
-	}
-	if err := consumer.New(bc, "processed_user_messages", struct{}{}).
-		Consume(ctx); err != nil {
-		panic(err)
-	}
+
+	go func() {
+		if err := consumer.New(bc, "invalidated_user_messages", struct{}{}).
+			Consume(ctx); err != nil {
+			panic(err)
+		}
+	}()
 
 	RunBot(ctx, *cfg)
 }
