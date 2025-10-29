@@ -64,7 +64,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error creating consumer group client: %w", err)
 	}
-	slog.InfoContext(ctx, "consumer group created")
+	slog.InfoContext(ctx, "consumer group created", "topic", c.Topic, "group", c.bc.Group)
 
 	defer func() {
 		if err := client.Close(); err != nil {
