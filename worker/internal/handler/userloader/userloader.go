@@ -3,10 +3,10 @@ package userloader
 import (
 	"context"
 	"errors"
-	"gihub.com/mefourr/tgdevob/worker/internal/kafka/message"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
+	"github.com/mefourr/tgdevob/worker/internal/kafka/message"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
+	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
 )

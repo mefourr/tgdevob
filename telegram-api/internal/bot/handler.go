@@ -2,10 +2,10 @@ package rqhandler
 
 import (
 	"context"
-	"gihub.com/mefourr/tgdevob/telegram-api/config"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka"
-	"gihub.com/mefourr/tgdevob/telegram-api/pkg/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mefourr/tgdevob/telegram-api/config"
+	"github.com/mefourr/tgdevob/telegram-api/internal/kafka"
+	"github.com/mefourr/tgdevob/telegram-api/pkg/logging"
 	"log/slog"
 )
 

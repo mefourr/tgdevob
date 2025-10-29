@@ -9,3 +9,8 @@ redis:
 
 kafka:
 	@docker run -d -p 9092:9092 --name broker apache/kafka:latest
+
+grpc:
+	protoc protoc *.proto --proto_path=. \
+	 --go_out=. --go_opt=module=github.com/mefourr/tgdevob/validator/pb \
+	 --go-grpc_out=. --go-grpc_opt=module=github.com/mefourr/tgdevob/validator/pb

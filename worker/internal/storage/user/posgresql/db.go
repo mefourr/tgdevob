@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
 )
 

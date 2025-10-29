@@ -3,9 +3,9 @@ package kafka
 import (
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/worker/internal/handler/worker"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/worker/internal/handler/worker"
+	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"golang.org/x/net/context"
 	"log/slog"
 	"os"

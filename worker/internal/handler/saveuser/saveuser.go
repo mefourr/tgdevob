@@ -3,9 +3,9 @@ package saveuser
 import (
 	"context"
 	"errors"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
 	"log/slog"
 	"time"
 )

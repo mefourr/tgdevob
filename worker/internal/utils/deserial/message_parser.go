@@ -2,8 +2,8 @@ package deserial
 
 import (
 	"encoding/json"
-	"gihub.com/mefourr/tgdevob/worker/internal/kafka/message"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/worker/internal/kafka/message"
 )
 
 func ParseMessage(msg *sarama.ConsumerMessage) (message.Message, error) {

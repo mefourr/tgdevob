@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/telegram-api/config"
-	rqhandler "gihub.com/mefourr/tgdevob/telegram-api/internal/bot"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer/startup"
-	"gihub.com/mefourr/tgdevob/telegram-api/pkg/logging"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/mefourr/tgdevob/telegram-api/config"
+	rqhandler "github.com/mefourr/tgdevob/telegram-api/internal/bot"
+	"github.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer"
+	"github.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer/startup"
+	"github.com/mefourr/tgdevob/telegram-api/pkg/logging"
 	"log/slog"
 )
 

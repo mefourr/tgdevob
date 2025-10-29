@@ -1,8 +1,8 @@
 package idem
 
 import (
-	"gihub.com/mefourr/tgdevob/worker/internal/kafka/message"
-	"gihub.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"github.com/mefourr/tgdevob/worker/internal/kafka/message"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
 )
 
 // Validate returns true if tgbotapi.Message.MessageID mismatched

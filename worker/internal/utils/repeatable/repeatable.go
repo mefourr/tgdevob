@@ -2,7 +2,7 @@ package repeatable
 
 import (
 	"context"
-	"gihub.com/mefourr/tgdevob/worker/config"
+	"github.com/mefourr/tgdevob/worker/config"
 	"log/slog"
 	"time"
 )

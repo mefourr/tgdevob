@@ -3,9 +3,9 @@ package consumer
 import (
 	"errors"
 	"fmt"
-	"gihub.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer/startup"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/telegram-api/internal/kafka/consumer/startup"
+	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"golang.org/x/net/context"
 	"log/slog"
 	"os"

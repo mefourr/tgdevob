@@ -2,11 +2,11 @@ package worker
 
 import (
 	"context"
-	"gihub.com/mefourr/tgdevob/worker/internal/handler/userloader"
-	"gihub.com/mefourr/tgdevob/worker/internal/kafka/idem"
-	"gihub.com/mefourr/tgdevob/worker/internal/utils/deserial"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/worker/internal/handler/userloader"
+	"github.com/mefourr/tgdevob/worker/internal/kafka/idem"
+	"github.com/mefourr/tgdevob/worker/internal/utils/deserial"
+	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
 	"strconv"
 )

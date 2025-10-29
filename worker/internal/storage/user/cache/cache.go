@@ -3,7 +3,7 @@ package cache
 import (
 	"encoding/json"
 	"errors"
-	"gihub.com/mefourr/tgdevob/worker/pkg/logging"
+	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/net/context"
 	"log/slog"
