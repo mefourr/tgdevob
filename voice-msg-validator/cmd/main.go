@@ -3,20 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/mefourr/tgdevob/msg/voice/validator/pb/message"
-	"github.com/mefourr/tgdevob/msg/voice/validator/pb/service"
+	"github.com/mefourr/tgdevob/proto/voice-msg-validator/v1/pb"
 	"google.golang.org/grpc"
 	"log"
 	"net"
 )
 
 type server struct {
-	service.UnimplementedEchoServiceServer
+	pb.UnimplementedValidateVMLengthServer
 }
 
-func (s *server) Echo(ctx context.Context, in *message.StringMessage) (*message.StringMessage, error) {
-	log.Printf("Received: %v", in.GetValue())
-	return &message.StringMessage{Value: in.Value + " processed"}, nil
+func (s *server) ValidateVMLength(ctx context.Context, in *pb.VoiceMessageDataRq) (*pb.ValidatedResultRs, error) {
+	log.Printf("Received: %d, %d", in.GetDuration(), in.GetFileSize())
+	return &pb.ValidatedResultRs{
+		IsValidated: false,
+	}, nil
 }
 
 func main() {
@@ -26,7 +27,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	service.RegisterEchoServiceServer(s, &server{})
+	pb.RegisterValidateVMLengthServer(s, &server{})
 
 	log.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {

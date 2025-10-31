@@ -3,12 +3,18 @@ package worker
 import (
 	"context"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/proto/voice-msg-validator/v1/pb"
 	"github.com/mefourr/tgdevob/worker/internal/handler/userloader"
 	"github.com/mefourr/tgdevob/worker/internal/kafka/idem"
 	"github.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"log"
 	"log/slog"
 	"strconv"
+	"sync"
+	"time"
 )
 
 type Worker interface {
@@ -53,8 +59,36 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 
 	// TODO: validate worker
 	// audio length and error to user bout validating error
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-	// TODO: s3-storage grpc
+		conn, err := grpc.NewClient("localhost:5353", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
+		defer conn.Close()
+
+		c := pb.NewValidateVMLengthClient(conn)
+
+		// Contact the server and print out its response.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		slog.InfoContext(ctx, "Try to send msg to validator")
+
+		r, err := c.ValidateVMLength(ctx, &pb.VoiceMessageDataRq{
+			FileSize: int64(m.Request.Voice.FileSize),
+			Duration: int64(m.Request.Voice.Duration),
+		})
+		if err != nil {
+			log.Fatalf("could not greet: %v", err)
+		}
+		log.Printf("Result: %t", r.GetIsValidated())
+	}()
+	wg.Wait()
+
+	// TODO: s3-storage grpc -> download/upload voice msg
 	// storage for voice message. Im gonna use yandex s3-storage object storage
 
 	// TODO: recognition grpc
