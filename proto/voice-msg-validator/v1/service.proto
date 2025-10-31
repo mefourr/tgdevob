@@ -5,5 +5,5 @@ option go_package = "github.com/mefourr/tgdevob/msg/voice/validator/pb/service";
 import "proto/voice-msg-validator/v1/message.proto";
 
 service EchoService {
-  rpc Echo(StringMessage) returns (StringMessage) {}
+  rpc ValidateVMLength(VoiceMessageDataRq) returns (ValidatedResultRs) {}
 }

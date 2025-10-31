@@ -2,6 +2,11 @@ syntax = "proto3";
 package msg.voice.validator.srv.v1;
 option go_package = "github.com/mefourr/tgdevob/msg/voice/validator/pb/message";
 
-message StringMessage {
-  string value = 1;
+message VoiceMessageDataRq {
+  int64 fileSize = 1;
+  int64 duration = 2;
+}
+
+message ValidatedResultRs {
+  bool isValidated = 1;
 }
