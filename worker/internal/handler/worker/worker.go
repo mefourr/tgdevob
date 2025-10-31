@@ -54,8 +54,8 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 	// TODO: validate worker
 	// audio length and error to user bout validating error
 
-	// TODO: s3 grpc
-	// storage for voice message. Im gonna use yandex s3 object storage
+	// TODO: s3-storage grpc
+	// storage for voice message. Im gonna use yandex s3-storage object storage
 
 	// TODO: recognition grpc
 	// recognition service. Im gonna use yandex stt service

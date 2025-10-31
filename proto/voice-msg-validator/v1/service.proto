@@ -1,0 +1,9 @@
+syntax = "proto3";
+package msg.voice.validator.srv.v1;
+option go_package = "github.com/mefourr/tgdevob/msg/voice/validator/pb/service";
+
+import "proto/voice-msg-validator/v1/message.proto";
+
+service EchoService {
+  rpc Echo(StringMessage) returns (StringMessage) {}
+}

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"context"
-	"github.com/mefourr/tgdevob/telegram-api/pkg/logging"
+	"github.com/mefourr/tgdevob/tgbot/pkg/logging"
 	"log/slog"
 	"os"
 )

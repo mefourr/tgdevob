@@ -10,7 +10,16 @@ redis:
 kafka:
 	@docker run -d -p 9092:9092 --name broker apache/kafka:latest
 
+ginstall:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
 grpc:
-	protoc protoc *.proto --proto_path=. \
-	 --go_out=. --go_opt=module=github.com/mefourr/tgdevob/validator/pb \
-	 --go-grpc_out=. --go-grpc_opt=module=github.com/mefourr/tgdevob/validator/pb
+	protoc proto/voice-msg-validator/v1/*.proto \
+	 --go_out=voice-msg-validator/pb --go_opt=module=github.com/mefourr/tgdevob/msg/voice/validator/pb \
+	 --go-grpc_out=voice-msg-validator/pb --go-grpc_opt=module=github.com/mefourr/tgdevob/msg/voice/validator/pb
+
+#tt:
+#	protoc validator/pb/*.proto \
+#	 --go_out=test/ --go_opt=module=github.com/mefourr/tgdevob/validator/pb \
+#	 --go-grpc_out=test/ --go-grpc_opt=module=github.com/mefourr/tgdevob/validator/pb

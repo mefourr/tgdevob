@@ -41,7 +41,7 @@ type Config struct {
 func LoadConfig(ctx context.Context) *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./telegram-api/config")
+	viper.AddConfigPath("./tgbot/config")
 
 	viper.AutomaticEnv()
 
