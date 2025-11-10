@@ -2,7 +2,7 @@ syntax = "proto3";
 package msg.voice.validator.srv.v1;
 option go_package = "github.com/mefourr/tgdevob/proto/voice-msg-validator/v1/pb";
 
-import "proto/voice-msg-validator/v1/message.proto";
+import "v1/message.proto";
 
 service ValidateVMLength {
   rpc ValidateVMLength(VoiceMessageDataRq) returns (ValidatedResultRs) {}
