@@ -13,8 +13,3 @@ kafka:
 ginstall:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-
-grpc:
-	protoc proto/voice-msg-validator/v1/*.proto \
-	 --go_out=proto/voice-msg-validator/v1 --go_opt=module=github.com/mefourr/tgdevob/proto/voice-msg-validator/v1 \
-	 --go-grpc_out=proto/voice-msg-validator/v1 --go-grpc_opt=module=github.com/mefourr/tgdevob/proto/voice-msg-validator/v1
