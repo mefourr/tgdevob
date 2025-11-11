@@ -5,6 +5,9 @@ import (
 	"github.com/mefourr/tgdevob/msg/voice/validator/internal/app"
 	"github.com/mefourr/tgdevob/msg/voice/validator/pkg/logging"
 	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -14,5 +17,14 @@ func main() {
 	slog.InfoContext(ctx, "starting validator", "config", cfg)
 
 	application := app.New(cfg)
-	application.GRPCSrv.MustRun(ctx)
+	go application.GRPCSrv.MustRun(ctx)
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT)
+
+	sig := <-shutdown
+	slog.InfoContext(ctx, "received shutdown signal", "signal", sig.String())
+
+	application.GRPCSrv.Shutdown()
+	slog.InfoContext(ctx, "application has been shutdown")
 }

@@ -48,6 +48,6 @@ func (a *App) run(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) Shutdown() {
+func (a *App) Shutdown(ctx context.Context) {
 	a.srv.GracefulStop()
 }
