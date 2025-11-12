@@ -17,10 +17,14 @@ type Config struct {
 	} `mapstructure:"grpc"`
 }
 
-func LoadConfig() *Config {
+func MustLoadConfig() *Config {
+	return LoadConfig("config")
+}
+
+func LoadConfig(path string) *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./voice-msg-validator/config")
+	viper.AddConfigPath(path)
 
 	viper.AutomaticEnv()
 

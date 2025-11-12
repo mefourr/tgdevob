@@ -3,6 +3,7 @@ package duration
 import (
 	"context"
 	"errors"
+	"github.com/mefourr/tgdevob/msg/voice/validator/internal/service/validation"
 	"github.com/mefourr/tgdevob/proto/voice-msg-validator/pb/v1"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"google.golang.org/grpc"
@@ -21,8 +22,9 @@ type ServerAPI struct {
 	val Validator
 }
 
-func Register(gRPC *grpc.Server, val Validator) {
-	pb.RegisterValidateVMLengthServer(gRPC, &ServerAPI{val: val})
+func Register(gRPC *grpc.Server) {
+	// TODO: need pass working interface into &ServerAPI{}
+	pb.RegisterValidateVMLengthServer(gRPC, &ServerAPI{val: validation.New()})
 }
 
 const (

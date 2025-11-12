@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	cfg := config.MustLoadConfig()
 	ctx := logging.Init()
 
 	slog.InfoContext(ctx, "starting validator", "config", cfg)
@@ -25,6 +25,6 @@ func main() {
 	sig := <-shutdown
 	slog.InfoContext(ctx, "received shutdown signal", "signal", sig.String())
 
-	application.GRPCSrv.Shutdown()
+	application.GRPCSrv.Shutdown(ctx)
 	slog.InfoContext(ctx, "application has been shutdown")
 }

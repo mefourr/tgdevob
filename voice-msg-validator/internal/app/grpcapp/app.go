@@ -17,6 +17,7 @@ type App struct {
 
 func New(port int) *App {
 	srv := grpc.NewServer()
+
 	duration.Register(srv)
 
 	return &App{srv: srv, port: port}

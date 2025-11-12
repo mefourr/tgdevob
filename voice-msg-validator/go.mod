@@ -5,6 +5,7 @@ go 1.24.4
 require google.golang.org/grpc v1.76.0
 
 require (
+	github.com/stretchr/testify v1.11.1 // indirect
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
