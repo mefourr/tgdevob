@@ -1,4 +1,4 @@
-package posgresql
+package postgresql
 
 // User TODO: remove pointers. Save omitempty fields like ""
 type User struct {

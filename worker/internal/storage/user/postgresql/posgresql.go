@@ -1,4 +1,4 @@
-package posgresql
+package postgresql
 
 import (
 	"context"
@@ -47,5 +47,6 @@ func NewClient(ctx context.Context, conf config.StorageConfig) (pool *pgxpool.Po
 		return nil, err
 	}
 
+	slog.InfoContext(ctx, "successfully connected to database")
 	return
 }

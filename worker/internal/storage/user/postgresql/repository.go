@@ -1,4 +1,4 @@
-package posgresql
+package postgresql
 
 import (
 	"context"
@@ -9,19 +9,19 @@ import (
 	"log/slog"
 )
 
-type UserRepository interface {
-	Create(ctx context.Context, user *User) error
-	FindAll(ctx context.Context) (u []User, err error)
-	FindById(ctx context.Context, id string) (User, error)
-	Update(ctx context.Context, user User) error
-	Delete(ctx context.Context, id string) error
+type Repository interface {
+	FindByID(ctx context.Context, id string) (User, error)
+	//Create(ctx context.Context, user *SaveUser) error
+	//FindAll(ctx context.Context) (u []SaveUser, err error)
+	//Update(ctx context.Context, user SaveUser) error
+	//Delete(ctx context.Context, id string) error
 }
 
 type repository struct {
 	Client Client
 }
 
-func New(client Client) UserRepository {
+func New(client Client) Repository {
 	return &repository{Client: client}
 }
 
@@ -80,7 +80,7 @@ func (d *repository) FindAll(ctx context.Context) (u []User, err error) {
 	return users, nil
 }
 
-func (d *repository) FindById(ctx context.Context, id string) (User, error) {
+func (d *repository) FindByID(ctx context.Context, id string) (User, error) {
 	q := `
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name

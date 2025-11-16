@@ -4,33 +4,31 @@ import (
 	"context"
 	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
 	"log/slog"
 	"time"
 )
 
-type Welcome struct {
-	Cache    cache.UserCache
-	Postgres posgresql.UserRepository
+type UserCreateRepository interface {
+	Create(ctx context.Context, user *postgresql.User) error
 }
 
-type StoreUser interface {
-	Create(ctx context.Context, user *posgresql.User) error
+type Welcome struct {
+	repository UserCreateRepository
 }
 
 func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	u := &posgresql.User{
+	u := &postgresql.User{
 		TgUserId:  data.ID,
 		UserName:  &data.UserName,
 		FirstName: &data.FirstName,
 		LastName:  &data.LastName,
 	}
 
-	if err := w.Postgres.Create(ctx, u); err != nil {
+	if err := w.repository.Create(ctx, u); err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			slog.WarnContext(ctx, "database request timed out", "ID", u.ID)
 			return "", ctx.Err()
@@ -39,7 +37,7 @@ func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, er
 	}
 
 	// TODO: immediately add to cache
-	//cachedUser := cache.User{
+	//cachedUser := cache.SaveUser{
 	//	Id:        u.ID,
 	//	TgUserId:  u.TgUserId,
 	//	UserName:  u.UserName,
@@ -48,7 +46,7 @@ func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, er
 	//}
 	//
 	//go func() {
-	//	if err := w.Cache.Save(ctx, cachedUser); err != nil {
+	//	if err := w.Store.Save(ctx, cachedUser); err != nil {
 	//		slog.WarnContext(ctx, "failed to save user to cache", "tgUserId", u.ID, "error", err)
 	//	}
 	//}()

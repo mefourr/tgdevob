@@ -11,20 +11,20 @@ import (
 	"time"
 )
 
-type UserCache interface {
-	Load(ctx context.Context, key string) (User, error)
-	Save(ctx context.Context, user User) error
+type Store interface {
+	Load(context.Context, string) (User, error)
+	Save(context.Context, User) error
 }
 
-type cache struct {
+type cacheClient struct {
 	rdb *redis.Client
 }
 
-func New(rdb *redis.Client) UserCache {
-	return &cache{rdb: rdb}
+func New(rdb *redis.Client) Store {
+	return &cacheClient{rdb: rdb}
 }
 
-func (c *cache) Load(ctx context.Context, key string) (User, error) {
+func (c *cacheClient) Load(ctx context.Context, key string) (User, error) {
 	res, err := c.rdb.Get(ctx, key).Result()
 
 	if errors.Is(err, redis.Nil) {
@@ -42,7 +42,7 @@ func (c *cache) Load(ctx context.Context, key string) (User, error) {
 	return u, nil
 }
 
-func (c *cache) Save(ctx context.Context, user User) error {
+func (c *cacheClient) Save(ctx context.Context, user User) error {
 	bytes, err := json.Marshal(&user)
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "error while marshalling user", err)

@@ -1,0 +1,20 @@
+all: false
+dir: "{{.InterfaceDir}}/mocks"
+filename: "{{.InterfaceName}}.go"
+pkgname: mocks
+template: testify
+packages:
+  github.com/mefourr/tgdevob/worker/internal/handler/loaduser:
+    interfaces:
+      UserCacheStore:
+        config: {}
+      UserRepository:
+        config: {}
+#  github.com/mefourr/tgdevob/worker/internal/storage/user/cache:
+#    interfaces:
+#      UserCache:
+#        config: {}
+#  github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql:
+#    interfaces:
+#      UserRepository:
+#        config: {}

@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"github.com/mefourr/tgdevob/worker/config"
-	"github.com/mefourr/tgdevob/worker/internal/handler/userloader"
+	"github.com/mefourr/tgdevob/worker/internal/handler/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"github.com/mefourr/tgdevob/worker/internal/kafka"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/posgresql"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
@@ -37,7 +37,7 @@ func main() {
 	}
 	slog.InfoContext(ctx, "after setting redis up result is ", result)
 
-	pool, err := posgresql.NewClient(ctx, config.StorageConfig{
+	pool, err := postgresql.NewClient(ctx, config.StorageConfig{
 		Username: "postgres",
 		Password: "admin",
 		Hostname: "localhost",
@@ -55,9 +55,9 @@ func main() {
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(userloader.New(
+		worker.New(loaduser.New(
 			cache.New(rdb),
-			posgresql.New(pool),
+			postgresql.New(pool),
 		)),
 	)
 	if err := consumer.Consume(ctx); err != nil {

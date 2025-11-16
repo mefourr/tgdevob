@@ -3,19 +3,12 @@ package worker
 import (
 	"context"
 	"github.com/IBM/sarama"
-	"github.com/mefourr/tgdevob/proto/voice-msg-validator/v1/pb"
-	"github.com/mefourr/tgdevob/worker/internal/handler/userloader"
+	"github.com/mefourr/tgdevob/worker/internal/handler/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/kafka/idem"
 	"github.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"log"
 	"log/slog"
 	"strconv"
-	"sync"
-	"time"
 )
 
 type Worker interface {
@@ -23,11 +16,11 @@ type Worker interface {
 }
 
 type rqWorker struct {
-	client userloader.Client
+	userService loaduser.UserService
 }
 
-func New(client userloader.Client) Worker {
-	return &rqWorker{client: client}
+func New(userService loaduser.UserService) Worker {
+	return &rqWorker{userService: userService}
 }
 
 func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
@@ -37,14 +30,14 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 		return err
 	}
 
-	// TODO: cache user
-	u, err := rqw.client.LoadUser(ctx, m, strconv.FormatInt(m.User.ID, 10))
+	// load and then cache user
+	u, err := rqw.userService.LoadUser(ctx, m, strconv.FormatInt(m.User.ID, 10))
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user")
 		return err
 	}
 
-	if !u.IsNonCached {
+	if u.MustValidated {
 		// TODO: idempotency guarantee
 		if ok := idem.Validate(u, m); !ok {
 			slog.ErrorContext(logging.ErrorCtx(ctx, nil), "Message that we just got has been already processed", "prev_message_id", u.LastRequest.MessageID, "current_message_id", m.Request.MessageID)
@@ -53,10 +46,10 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 		}
 	}
 
-	slog.InfoContext(ctx, "updating user cache", "user", u)
-
-	rqw.client.SaveUserLastRequest(u, m)
-	go rqw.client.SaveOrUpdateUser(ctx, u)
+	slog.InfoContext(ctx, "updating user in cache", "user", u)
+	go func() {
+		_ = rqw.userService.SaveUser(ctx, u, m)
+	}()
 
 	// TODO: validate worker
 	// audio length and error to user bout validating error
