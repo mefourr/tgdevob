@@ -36,8 +36,8 @@ func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, er
 		return "", err
 	}
 
-	// TODO: immediately add to cache
-	//cachedUser := cache.SaveUser{
+	// TODO: immediately add to rediscache
+	//cachedUser := rediscache.SaveUser{
 	//	Id:        u.ID,
 	//	TgUserId:  u.TgUserId,
 	//	UserName:  u.UserName,
@@ -47,7 +47,7 @@ func (w *Welcome) SaveUser(ctx context.Context, data *tgbotapi.User) (string, er
 	//
 	//go func() {
 	//	if err := w.Store.Save(ctx, cachedUser); err != nil {
-	//		slog.WarnContext(ctx, "failed to save user to cache", "tgUserId", u.ID, "error", err)
+	//		slog.WarnContext(ctx, "failed to save user to rediscache", "tgUserId", u.ID, "error", err)
 	//	}
 	//}()
 

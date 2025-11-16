@@ -19,10 +19,10 @@ type Consumer struct {
 	Brokers []string
 	Topic   string
 	Group   string
-	handler worker.Worker
+	handler worker.MessageHandler
 }
 
-func NewConsumer(brokers []string, topic string, group string, handler worker.Worker) *Consumer {
+func NewConsumer(brokers []string, topic string, group string, handler worker.MessageHandler) *Consumer {
 	return &Consumer{ready: make(chan struct{}), Brokers: brokers, Topic: topic, Group: group, handler: handler}
 }
 
@@ -46,6 +46,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 
+			// TODO: only Process method is handler
 			_ = c.handler.Process(context.Background(), message)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():

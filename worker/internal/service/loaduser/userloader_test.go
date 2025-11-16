@@ -2,10 +2,10 @@ package loaduser
 
 import (
 	"context"
-	"github.com/mefourr/tgdevob/worker/internal/handler/loaduser/mocks"
 	"github.com/mefourr/tgdevob/worker/internal/kafka/message"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	mocks2 "github.com/mefourr/tgdevob/worker/internal/service/loaduser/mocks"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/rediscache"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	_ "reflect"
@@ -42,17 +42,17 @@ func Test_clientRetriever_LoadUser(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			userRepository := mocks.NewMockUserRepository(t)
-			userCacheStore := mocks.NewMockUserCacheStore(t)
+			userRepository := mocks2.NewMockUserRepository(t)
+			userCacheStore := mocks2.NewMockUserCacheStore(t)
 
 			s := &service{
 				userCacheStore: userCacheStore,
-				userRepository: userRepository,
+				userFinder:     userRepository,
 			}
 
 			userCacheStore.
 				On("Load", tt.args.ctx, tt.args.key).
-				Return(cache.User{}, redis.Nil).
+				Return(rediscache.User{}, redis.Nil).
 				Once()
 			userRepository.
 				On("FindByID", tt.args.ctx, tt.args.key).

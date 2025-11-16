@@ -9,27 +9,41 @@ import (
 	"log/slog"
 )
 
-type Repository interface {
-	FindByID(ctx context.Context, id string) (User, error)
-	//Create(ctx context.Context, user *SaveUser) error
-	//FindAll(ctx context.Context) (u []SaveUser, err error)
-	//Update(ctx context.Context, user SaveUser) error
-	//Delete(ctx context.Context, id string) error
+type Repository struct {
+	client Client
 }
 
-type repository struct {
-	Client Client
+func New(client Client) *Repository {
+	return &Repository{client: client}
 }
 
-func New(client Client) Repository {
-	return &repository{Client: client}
-}
-
-func formatQuery(query string) string {
+func formatQuery(_ string) string {
 	panic("implement me")
 }
 
-func (d *repository) Create(ctx context.Context, user *User) error {
+func (d *Repository) FindByID(ctx context.Context, id string) (User, error) {
+
+	q := `
+		SELECT 
+		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
+		FROM public.tg_users u
+		WHERE u.tg_uid = $1
+	`
+	slog.DebugContext(ctx, "SQL Query", ":", q, "id:", id)
+
+	var u User
+	if err := d.client.QueryRow(ctx, q, id).Scan(
+		&u.ID, &u.TgUserId, &u.UserName, &u.FirstName, &u.LastName,
+	); err != nil {
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "SQL Query", ":", err.Error())
+		return User{}, err
+	}
+
+	slog.DebugContext(ctx, "Retrieved entity", "user", u)
+	return u, nil
+}
+
+func (d *Repository) Create(ctx context.Context, user *User) error {
 	// TODO: do fields validation on up level
 	q := `
 		INSERT INTO 
@@ -39,7 +53,7 @@ func (d *repository) Create(ctx context.Context, user *User) error {
 	`
 	slog.DebugContext(ctx, "SQL", "query", q)
 
-	if err := d.Client.QueryRow(
+	if err := d.client.QueryRow(
 		ctx, q, user.TgUserId, user.UserName, user.FirstName, user.LastName,
 	).Scan(&user.ID); err != nil {
 		var pgError *pgconn.PgError
@@ -51,7 +65,7 @@ func (d *repository) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (d *repository) FindAll(ctx context.Context) (u []User, err error) {
+func (d *Repository) FindAll(ctx context.Context) (u []User, err error) {
 	q := `
 		SELECT 
 		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
@@ -59,7 +73,7 @@ func (d *repository) FindAll(ctx context.Context) (u []User, err error) {
 	`
 	slog.DebugContext(ctx, "SQL query", ":", q)
 
-	query, err := d.Client.Query(ctx, q)
+	query, err := d.client.Query(ctx, q)
 	if err != nil {
 		return nil, err
 	}
@@ -80,28 +94,7 @@ func (d *repository) FindAll(ctx context.Context) (u []User, err error) {
 	return users, nil
 }
 
-func (d *repository) FindByID(ctx context.Context, id string) (User, error) {
-	q := `
-		SELECT 
-		    u.id, u.tg_uid, u.login, u.first_name, u.last_name
-		FROM public.tg_users u
-		WHERE u.tg_uid = $1
-	`
-	slog.DebugContext(ctx, "SQL Query", ":", q, "id:", id)
-
-	var u User
-	if err := d.Client.QueryRow(ctx, q, id).Scan(
-		&u.ID, &u.TgUserId, &u.UserName, &u.FirstName, &u.LastName,
-	); err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "SQL Query", ":", err.Error())
-		return User{}, err
-	}
-
-	slog.DebugContext(ctx, "Retrieved entity", "user", u)
-	return u, nil
-}
-
-func (d *repository) Update(ctx context.Context, user User) error {
+func (d *Repository) Update(_ context.Context, _ User) error {
 	_ = `
 		UPDATE public.tg_users
 		SET tg_uid = $1, login = $2, first_name = $3, last_name = $4
@@ -112,7 +105,7 @@ func (d *repository) Update(ctx context.Context, user User) error {
 	panic("implement me")
 }
 
-func (d *repository) Delete(ctx context.Context, id string) error {
+func (d *Repository) Delete(_ context.Context, _ string) error {
 	_ = `
 		DELETE FROM public.tg_users WHERE id = $1
 	` // TODO: or add a flag isDeleted

@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"github.com/mefourr/tgdevob/worker/config"
-	"github.com/mefourr/tgdevob/worker/internal/handler/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"github.com/mefourr/tgdevob/worker/internal/kafka"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"github.com/mefourr/tgdevob/worker/internal/service/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/rediscache"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		slog.ErrorContext(ctx, err.Error())
 	}
-	slog.InfoContext(ctx, "after setting redis up result is ", result)
+	slog.InfoContext(ctx, "after setting rediscache up result is ", result)
 
 	pool, err := postgresql.NewClient(ctx, config.StorageConfig{
 		Username: "postgres",
@@ -55,10 +55,11 @@ func main() {
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(loaduser.New(
-			cache.New(rdb),
-			postgresql.New(pool),
-		)),
+		worker.New(
+			loaduser.New(
+				rediscache.New(rdb),
+				postgresql.New(pool),
+			)),
 	)
 	if err := consumer.Consume(ctx); err != nil {
 		panic(err)

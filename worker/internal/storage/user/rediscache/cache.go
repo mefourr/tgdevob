@@ -1,4 +1,4 @@
-package cache
+package rediscache
 
 import (
 	"encoding/json"
@@ -11,20 +11,15 @@ import (
 	"time"
 )
 
-type Store interface {
-	Load(context.Context, string) (User, error)
-	Save(context.Context, User) error
-}
-
-type cacheClient struct {
+type Cache struct {
 	rdb *redis.Client
 }
 
-func New(rdb *redis.Client) Store {
-	return &cacheClient{rdb: rdb}
+func New(rdb *redis.Client) *Cache {
+	return &Cache{rdb: rdb}
 }
 
-func (c *cacheClient) Load(ctx context.Context, key string) (User, error) {
+func (c *Cache) Load(ctx context.Context, key string) (User, error) {
 	res, err := c.rdb.Get(ctx, key).Result()
 
 	if errors.Is(err, redis.Nil) {
@@ -42,7 +37,7 @@ func (c *cacheClient) Load(ctx context.Context, key string) (User, error) {
 	return u, nil
 }
 
-func (c *cacheClient) Save(ctx context.Context, user User) error {
+func (c *Cache) Save(ctx context.Context, user User) error {
 	bytes, err := json.Marshal(&user)
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "error while marshalling user", err)

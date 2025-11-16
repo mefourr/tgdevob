@@ -7,7 +7,7 @@ package mocks
 import (
 	"context"
 
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/cache"
+	"github.com/mefourr/tgdevob/worker/internal/storage/user/rediscache"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,22 +39,22 @@ func (_m *MockUserCacheStore) EXPECT() *MockUserCacheStore_Expecter {
 }
 
 // Load provides a mock function for the type MockUserCacheStore
-func (_mock *MockUserCacheStore) Load(context1 context.Context, s string) (cache.User, error) {
+func (_mock *MockUserCacheStore) Load(context1 context.Context, s string) (rediscache.User, error) {
 	ret := _mock.Called(context1, s)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Load")
 	}
 
-	var r0 cache.User
+	var r0 rediscache.User
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (cache.User, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (rediscache.User, error)); ok {
 		return returnFunc(context1, s)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) cache.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) rediscache.User); ok {
 		r0 = returnFunc(context1, s)
 	} else {
-		r0 = ret.Get(0).(cache.User)
+		r0 = ret.Get(0).(rediscache.User)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = returnFunc(context1, s)
@@ -94,18 +94,18 @@ func (_c *MockUserCacheStore_Load_Call) Run(run func(context1 context.Context, s
 	return _c
 }
 
-func (_c *MockUserCacheStore_Load_Call) Return(user cache.User, err error) *MockUserCacheStore_Load_Call {
+func (_c *MockUserCacheStore_Load_Call) Return(user rediscache.User, err error) *MockUserCacheStore_Load_Call {
 	_c.Call.Return(user, err)
 	return _c
 }
 
-func (_c *MockUserCacheStore_Load_Call) RunAndReturn(run func(context1 context.Context, s string) (cache.User, error)) *MockUserCacheStore_Load_Call {
+func (_c *MockUserCacheStore_Load_Call) RunAndReturn(run func(context1 context.Context, s string) (rediscache.User, error)) *MockUserCacheStore_Load_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Save provides a mock function for the type MockUserCacheStore
-func (_mock *MockUserCacheStore) Save(context1 context.Context, user cache.User) error {
+func (_mock *MockUserCacheStore) Save(context1 context.Context, user rediscache.User) error {
 	ret := _mock.Called(context1, user)
 
 	if len(ret) == 0 {
@@ -113,7 +113,7 @@ func (_mock *MockUserCacheStore) Save(context1 context.Context, user cache.User)
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, cache.User) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, rediscache.User) error); ok {
 		r0 = returnFunc(context1, user)
 	} else {
 		r0 = ret.Error(0)
@@ -128,20 +128,20 @@ type MockUserCacheStore_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - context1 context.Context
-//   - user cache.User
+//   - user rediscache.User
 func (_e *MockUserCacheStore_Expecter) Save(context1 interface{}, user interface{}) *MockUserCacheStore_Save_Call {
 	return &MockUserCacheStore_Save_Call{Call: _e.mock.On("Save", context1, user)}
 }
 
-func (_c *MockUserCacheStore_Save_Call) Run(run func(context1 context.Context, user cache.User)) *MockUserCacheStore_Save_Call {
+func (_c *MockUserCacheStore_Save_Call) Run(run func(context1 context.Context, user rediscache.User)) *MockUserCacheStore_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 cache.User
+		var arg1 rediscache.User
 		if args[1] != nil {
-			arg1 = args[1].(cache.User)
+			arg1 = args[1].(rediscache.User)
 		}
 		run(
 			arg0,
@@ -156,7 +156,7 @@ func (_c *MockUserCacheStore_Save_Call) Return(err error) *MockUserCacheStore_Sa
 	return _c
 }
 
-func (_c *MockUserCacheStore_Save_Call) RunAndReturn(run func(context1 context.Context, user cache.User) error) *MockUserCacheStore_Save_Call {
+func (_c *MockUserCacheStore_Save_Call) RunAndReturn(run func(context1 context.Context, user rediscache.User) error) *MockUserCacheStore_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }

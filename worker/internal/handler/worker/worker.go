@@ -3,35 +3,35 @@ package worker
 import (
 	"context"
 	"github.com/IBM/sarama"
-	"github.com/mefourr/tgdevob/worker/internal/handler/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/kafka/idem"
+	"github.com/mefourr/tgdevob/worker/internal/service/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
 	"strconv"
 )
 
-type Worker interface {
+type MessageHandler interface {
 	Process(ctx context.Context, msg *sarama.ConsumerMessage) error
 }
 
-type rqWorker struct {
+type handler struct {
 	userService loaduser.UserService
 }
 
-func New(userService loaduser.UserService) Worker {
-	return &rqWorker{userService: userService}
+func New(userService loaduser.UserService) MessageHandler {
+	return &handler{userService: userService}
 }
 
-func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
+func (h *handler) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	m, err := deserial.ParseMessage(msg)
 	if err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to unmarshal worker")
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to unmarshal handler")
 		return err
 	}
 
-	// load and then cache user
-	u, err := rqw.userService.LoadUser(ctx, m, strconv.FormatInt(m.User.ID, 10))
+	// load and then rediscache user
+	u, err := h.userService.LoadUser(ctx, m, strconv.FormatInt(m.User.ID, 10))
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user")
 		return err
@@ -46,12 +46,12 @@ func (rqw *rqWorker) Process(ctx context.Context, msg *sarama.ConsumerMessage) e
 		}
 	}
 
-	slog.InfoContext(ctx, "updating user in cache", "user", u)
+	slog.InfoContext(ctx, "updating user in rediscache", "user", u)
 	go func() {
-		_ = rqw.userService.SaveUser(ctx, u, m)
+		_ = h.userService.SaveUser(ctx, u, m)
 	}()
 
-	// TODO: validate worker
+	// TODO: validate handler
 	// audio length and error to user bout validating error
 
 	// TODO: s3-storage grpcapp -> download/upload voice msg
