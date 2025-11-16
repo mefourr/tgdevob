@@ -1,10 +1,9 @@
-package test
+package integration
 
 import (
-	"github.com/mefourr/tgdevob/msg/voice/validator/test/suite"
+	"github.com/mefourr/tgdevob/msg/voice/validator/test/integration/suite"
 	"github.com/mefourr/tgdevob/proto/voice-msg-validator/pb/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"testing"
 )
@@ -23,8 +22,8 @@ func TestValidVoiceMessage_HappyPath(t *testing.T) {
 		Duration: duration,
 		Du:       durationpb.New(duration),
 	})
-	require.NoError(t, err)
 
+	assert.NoError(t, err)
 	assert.Equal(t, expected, res.GetIsValidated())
 	assert.True(t, !res.GetIsValidated())
 }

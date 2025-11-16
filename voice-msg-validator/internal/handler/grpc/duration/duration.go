@@ -14,7 +14,7 @@ import (
 )
 
 type Validator interface {
-	Validate(ctx context.Context, duration *durationpb.Duration, fileSize int64) (err error, res bool)
+	Validate(ctx context.Context, duration *durationpb.Duration, fileSize int64) (res bool, err error)
 }
 
 type ServerAPI struct {
@@ -43,7 +43,7 @@ func (s *ServerAPI) ValidateVMLength(ctx context.Context, in *pb.VoiceMessageDat
 	}
 
 	// TODO: implement voice message validation service
-	err, res := s.val.Validate(ctx, in.GetDu(), in.GetFileSize())
+	res, err := s.val.Validate(ctx, in.GetDu(), in.GetFileSize())
 	if err != nil {
 		// TODO: error type handling
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
