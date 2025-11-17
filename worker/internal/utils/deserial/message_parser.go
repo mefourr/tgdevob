@@ -6,11 +6,16 @@ import (
 	"github.com/mefourr/tgdevob/worker/internal/kafka/message"
 )
 
-func ParseMessage(msg *sarama.ConsumerMessage) (message.Message, error) {
-	var m message.Message
-	err := json.Unmarshal(msg.Value, &m)
-	if err != nil {
-		return message.Message{}, err
-	}
-	return m, nil
+type MessageParser interface {
+	Parse(res *message.Message, cm *sarama.ConsumerMessage) error
+}
+
+type messageParser struct{}
+
+func New() MessageParser {
+	return &messageParser{}
+}
+
+func (mp *messageParser) Parse(res *message.Message, cm *sarama.ConsumerMessage) error {
+	return json.Unmarshal(cm.Value, res)
 }

@@ -3,6 +3,7 @@ package loaduser
 import (
 	"context"
 	"errors"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mefourr/tgdevob/worker/internal/kafka/message"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/rediscache"
@@ -66,7 +67,7 @@ func (s *service) LoadUser(ctx context.Context, msg message.Message, key string)
 }
 
 func (s *service) SaveUser(ctx context.Context, u *rediscache.User, msg message.Message) error {
-	s.saveLastRequest(u, msg)
+	saveLastRequest(u, msg.Request)
 	if !u.MustValidated {
 		u.MustValidated = true
 	}
@@ -78,6 +79,6 @@ func (s *service) SaveUser(ctx context.Context, u *rediscache.User, msg message.
 	return nil
 }
 
-func (s *service) saveLastRequest(u *rediscache.User, msg message.Message) {
-	u.LastRequest = msg.Request
+func saveLastRequest(u *rediscache.User, req *tgbotapi.Message) {
+	u.LastRequest = req
 }

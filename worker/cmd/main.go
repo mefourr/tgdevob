@@ -5,9 +5,11 @@ import (
 	"github.com/mefourr/tgdevob/worker/config"
 	"github.com/mefourr/tgdevob/worker/internal/handler/worker"
 	"github.com/mefourr/tgdevob/worker/internal/kafka"
+	"github.com/mefourr/tgdevob/worker/internal/kafka/idem"
 	"github.com/mefourr/tgdevob/worker/internal/service/loaduser"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
 	"github.com/mefourr/tgdevob/worker/internal/storage/user/rediscache"
+	"github.com/mefourr/tgdevob/worker/internal/utils/deserial"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
@@ -59,7 +61,14 @@ func main() {
 			loaduser.New(
 				rediscache.New(rdb),
 				postgresql.New(pool),
-			)),
+			),
+			deserial.New(),
+			idem.DefaultChecker{},
+			nil,
+			nil,
+			nil,
+			nil,
+		),
 	)
 	if err := consumer.Consume(ctx); err != nil {
 		panic(err)
