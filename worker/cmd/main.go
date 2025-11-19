@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		slog.ErrorContext(ctx, err.Error())
 	}
-	slog.InfoContext(ctx, "after setting rediscache up result is ", result)
+	slog.InfoContext(ctx, "after setting redis up", "res", result)
 
 	pool, err := postgresql.NewClient(ctx, config.StorageConfig{
 		Username: "postgres",

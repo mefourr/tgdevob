@@ -44,7 +44,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 
-			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			slog.DebugContext(session.Context(), "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topic", c.Topic, "group", c.Group)
 
 			// TODO: only Process method is handler
 			_ = c.handler.Process(context.Background(), message)
@@ -79,7 +79,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 		for {
 			if err := client.Consume(ctx, []string{c.Topic}, c); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by:", err)
+					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by", "err", err)
 					return
 				}
 				slog.ErrorContext(logging.ErrorCtx(ctx, err), "error from consumer")

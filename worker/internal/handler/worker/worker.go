@@ -37,7 +37,7 @@ type IdempotencyChecker interface {
 
 //go:generate go run github.com/vektra/mockery/v3@v3.6.0
 type MessageParser interface {
-	Parse(res *message.Message, cm *sarama.ConsumerMessage) error
+	Parse(res *message.Message, data []byte) error
 }
 
 //go:generate go run github.com/vektra/mockery/v3@v3.6.0
@@ -62,7 +62,7 @@ func New(userService UserService, messageParser MessageParser, idempotencyChecke
 
 func (h *handler) Process(ctx context.Context, msg *sarama.ConsumerMessage) error {
 	m := message.Message{}
-	if err := h.messageParser.Parse(&m, msg); err != nil {
+	if err := h.messageParser.Parse(&m, msg.Value); err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to unmarshal handler")
 		return err
 	}

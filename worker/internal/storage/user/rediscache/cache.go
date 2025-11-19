@@ -40,7 +40,7 @@ func (c *Cache) Load(ctx context.Context, key string) (User, error) {
 func (c *Cache) Save(ctx context.Context, user User) error {
 	bytes, err := json.Marshal(&user)
 	if err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "error while marshalling user", err)
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "error while marshalling user", "err:", err)
 		return err
 	}
 
