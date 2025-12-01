@@ -26,5 +26,5 @@ func main() {
 	slog.InfoContext(ctx, "received shutdown signal", "signal", sig.String())
 
 	application.GRPCSrv.Shutdown(ctx)
-	slog.InfoContext(ctx, "application has been shutdown")
+	slog.InfoContext(ctx, "app has been shutdown")
 }

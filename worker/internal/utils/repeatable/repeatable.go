@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Connect(fn func() error, conf config.StorageConfig) (err error) {
+func Connect(fn func() error, conf config.Config) (err error) {
 	for conf.RetryNum > 0 {
 		if err = fn(); err != nil {
 			time.Sleep(conf.Delay)

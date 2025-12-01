@@ -2,42 +2,39 @@ package main
 
 import (
 	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mefourr/tgdevob/worker/config"
-	"github.com/mefourr/tgdevob/worker/internal/infra/kafka"
+	"github.com/mefourr/tgdevob/worker/internal/app"
 	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
-	"github.com/mefourr/tgdevob/worker/internal/infra/repository/redis"
-	ikafka "github.com/mefourr/tgdevob/worker/internal/interfaces/kafka"
-	"github.com/mefourr/tgdevob/worker/internal/service"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
-	"log/slog"
 	"time"
 )
 
-const (
-	brokers = "localhost:9092" // TODO: retrieve from sys env
-	topic   = "tg_requests"
-	group   = "example"
-)
-
+// todo: main must load the app config, logger, initialize the worker app and do shutdown by signal
 func main() {
 	ctx := logging.Init()
-	slog.InfoContext(ctx, "Logger for consumer is initialized")
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-	_ = rdb.FlushDB(ctx).Err()
+	cfg := &config.Config{}
 
-	ping := rdb.Ping(context.Background())
-	result, err := ping.Result()
-	if err != nil {
-		slog.ErrorContext(ctx, err.Error())
-	}
-	slog.InfoContext(ctx, "after setting redis up", "res", result)
+	rdb := connectToRedis(ctx, cfg)
+	pool := connectToPostgres(ctx, cfg)
+	defer pool.Close()
 
-	pool, err := postgres.NewClient(ctx, config.StorageConfig{
+	application := app.New(cfg, rdb, pool)
+	application.Worker.MustRun(ctx)
+
+	//shutdown := make(chan os.Signal, 1)
+	//signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT)
+	//
+	//sig := <-shutdown
+	//slog.InfoContext(ctx, "received shutdown signal", "signal", sig.String())
+	//
+	//application.Worker.Shutdown(ctx)
+	//slog.InfoContext(ctx, "app has been shutdown")
+}
+
+func connectToPostgres(ctx context.Context, _ *config.Config) *pgxpool.Pool {
+	pool, err := postgres.NewClient(ctx, config.Config{
 		Username: "postgres",
 		Password: "admin",
 		Hostname: "localhost",
@@ -49,22 +46,19 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer pool.Close()
+	return pool
+}
 
-	consumer := kafka.NewConsumer(
-		[]string{brokers},
-		topic,
-		group,
-		ikafka.NewEventHandler(
-			ikafka.NewEventProcessor(
-				service.NewParserSvc(),
-				service.NewLoadUserSvc(rediscache.New(rdb), postgres.New(pool)),
-				service.NewSaveUserSvc(rediscache.New(rdb)),
-				service.NewChecker(),
-			),
-		),
-	)
-	if err := consumer.Consume(ctx); err != nil {
+func connectToRedis(ctx context.Context, _ *config.Config) *redis.Client {
+	c := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+	c.FlushDB(ctx)
+	ping := c.Ping(ctx)
+	if _, err := ping.Result(); err != nil {
 		panic(err)
 	}
+	return c
 }
