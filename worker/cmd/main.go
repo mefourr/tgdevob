@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"github.com/mefourr/tgdevob/worker/config"
-	"github.com/mefourr/tgdevob/worker/internal/handler/worker"
-	"github.com/mefourr/tgdevob/worker/internal/kafka"
-	"github.com/mefourr/tgdevob/worker/internal/kafka/idem"
-	"github.com/mefourr/tgdevob/worker/internal/service/loaduser"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/postgresql"
-	"github.com/mefourr/tgdevob/worker/internal/storage/user/rediscache"
-	"github.com/mefourr/tgdevob/worker/internal/utils/deserial"
+	"github.com/mefourr/tgdevob/worker/internal/infra/kafka"
+	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
+	"github.com/mefourr/tgdevob/worker/internal/infra/repository/redis"
+	ikafka "github.com/mefourr/tgdevob/worker/internal/interfaces/kafka"
+	"github.com/mefourr/tgdevob/worker/internal/service"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"log/slog"
@@ -39,7 +37,7 @@ func main() {
 	}
 	slog.InfoContext(ctx, "after setting redis up", "res", result)
 
-	pool, err := postgresql.NewClient(ctx, config.StorageConfig{
+	pool, err := postgres.NewClient(ctx, config.StorageConfig{
 		Username: "postgres",
 		Password: "admin",
 		Hostname: "localhost",
@@ -57,17 +55,13 @@ func main() {
 		[]string{brokers},
 		topic,
 		group,
-		worker.New(
-			loaduser.New(
-				rediscache.New(rdb),
-				postgresql.New(pool),
+		ikafka.NewEventHandler(
+			ikafka.NewEventProcessor(
+				service.NewParserSvc(),
+				service.NewLoadUserSvc(rediscache.New(rdb), postgres.New(pool)),
+				service.NewSaveUserSvc(rediscache.New(rdb)),
+				service.NewChecker(),
 			),
-			deserial.New(),
-			idem.DefaultChecker{},
-			nil,
-			nil,
-			nil,
-			nil,
 		),
 	)
 	if err := consumer.Consume(ctx); err != nil {
