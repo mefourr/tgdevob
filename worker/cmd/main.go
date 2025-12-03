@@ -8,6 +8,10 @@ import (
 	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
+	"log/slog"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -16,21 +20,23 @@ func main() {
 	ctx := logging.Init()
 	cfg := &config.Config{}
 
-	rdb := connectToRedis(ctx, cfg)
+	client := connectToRedis(ctx, cfg)
+	defer client.Close()
 	pool := connectToPostgres(ctx, cfg)
 	defer pool.Close()
 
-	application := app.New(cfg, rdb, pool)
-	application.Worker.MustRun(ctx)
+	application := app.New(cfg, client, pool)
 
-	//shutdown := make(chan os.Signal, 1)
-	//signal.Notify(shutdown, syscall.SIGTERM, syscall.SIGINT)
-	//
-	//sig := <-shutdown
-	//slog.InfoContext(ctx, "received shutdown signal", "signal", sig.String())
-	//
-	//application.Worker.Shutdown(ctx)
-	//slog.InfoContext(ctx, "app has been shutdown")
+	ctx, cancel := context.WithCancel(ctx)
+	go application.Worker.MustRun(ctx)
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
+	<-shutdown
+	cancel()
+
+	slog.InfoContext(ctx, "app has been shutdown")
 }
 
 func connectToPostgres(ctx context.Context, _ *config.Config) *pgxpool.Pool {

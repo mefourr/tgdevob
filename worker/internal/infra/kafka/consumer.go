@@ -1,17 +1,13 @@
 package kafka
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"github.com/IBM/sarama"
 	"github.com/mefourr/tgdevob/worker/internal/interfaces/kafka"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
-	"golang.org/x/net/context"
 	"log/slog"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 )
 
 type Consumer struct {
@@ -65,24 +61,15 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 }
 
 func (c *Consumer) Consume(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	client, err := newConsumerGroup(c.Group, c.Brokers)
 	if err != nil {
-		return fmt.Errorf("error creating consumer group client: %w", err)
+		return err
 	}
-	slog.InfoContext(ctx, "consumer group created")
-
-	defer func() {
-		if err := client.Close(); err != nil {
-			slog.ErrorContext(logging.ErrorCtx(ctx, err), "error closing consumer group client")
-		}
-	}()
+	defer client.Close()
 
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
 
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
@@ -95,7 +82,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 			}
 
 			if ctx.Err() != nil {
-				slog.ErrorContext(logging.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation")
+				slog.InfoContext(ctx, "consumer group closed by cancellation")
 				return
 			}
 
@@ -107,21 +94,14 @@ func (c *Consumer) Consume(ctx context.Context) error {
 	<-c.ready
 	slog.InfoContext(ctx, "Sarama consumer up and running!...")
 
-	sigterm := make(chan os.Signal, 1)
-	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(sigterm)
-
 	select {
 	case <-ctx.Done():
-		slog.InfoContext(ctx, "terminating: context cancelled", "ctx", ctx.Err())
-	case <-sigterm:
-		slog.InfoContext(ctx, "terminating: via signal")
+		slog.InfoContext(ctx, "kafka.Consume: context cancelled")
 	}
 
-	cancel() // Trigger goroutine shutdown
 	wg.Wait()
 
-	slog.InfoContext(ctx, "Sarama consumer shut down")
+	slog.InfoContext(ctx, "Sarama consumer successfully closed")
 	return nil
 }
 

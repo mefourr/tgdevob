@@ -13,13 +13,11 @@ func New(con *kafka.Consumer) *App {
 	return &App{con: con}
 }
 
+// MustRun must be wrapped by canceled context
 func (a App) MustRun(ctx context.Context) {
 	if err := a.run(ctx); err != nil {
 		panic(err)
 	}
-}
-
-func (a App) Shutdown(_ context.Context) {
 }
 
 func (a App) run(ctx context.Context) error {
