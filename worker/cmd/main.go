@@ -35,8 +35,6 @@ func main() {
 
 	<-shutdown
 	cancel()
-
-	slog.InfoContext(ctx, "app has been shutdown")
 }
 
 func connectToPostgres(ctx context.Context, _ *config.Config) *pgxpool.Pool {
@@ -52,6 +50,8 @@ func connectToPostgres(ctx context.Context, _ *config.Config) *pgxpool.Pool {
 	if err != nil {
 		panic(err)
 	}
+
+	slog.InfoContext(ctx, "successfully connected to postgres")
 	return pool
 }
 
@@ -66,5 +66,6 @@ func connectToRedis(ctx context.Context, _ *config.Config) *redis.Client {
 	if _, err := ping.Result(); err != nil {
 		panic(err)
 	}
+	slog.InfoContext(ctx, "successfully connected to redis")
 	return c
 }

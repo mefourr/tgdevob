@@ -47,6 +47,5 @@ func NewClient(ctx context.Context, conf config.Config) (pool *pgxpool.Pool, err
 		return nil, err
 	}
 
-	slog.InfoContext(ctx, "successfully connected to database")
 	return
 }
