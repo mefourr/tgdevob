@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+//go:generate go run github.com/vektra/mockery/v3@v3.6.0
 type Client interface {
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -21,9 +22,9 @@ type Client interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func NewClient(ctx context.Context, conf config.Config) (pool *pgxpool.Pool, err error) {
-	hp := net.JoinHostPort(conf.Hostname, conf.Port)
-	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", conf.Username, conf.Password, hp, conf.Database)
+func NewClient(ctx context.Context, conf *config.Config) (pool *pgxpool.Pool, err error) {
+	hp := net.JoinHostPort(conf.Postgres.Host, conf.Postgres.Port)
+	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", conf.Postgres.Username, conf.Postgres.Password, hp, conf.Postgres.Database)
 	slog.InfoContext(ctx, "try to connect to psql by", "dsn", dsn)
 
 	err = repeatable.Connect(func() error {

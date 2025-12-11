@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"github.com/mefourr/tgdevob/worker/internal/domain"
+	"github.com/mefourr/tgdevob/worker/internal/service"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
 	"strconv"
@@ -37,6 +38,7 @@ type eventProcessor struct {
 	lu  LoadUserSvc
 	su  SaveUserSvc
 	ic  IdempotencyCheckerSvc
+	vdv service.VoiceDurationValidator
 }
 
 func NewEventProcessor(
@@ -44,12 +46,14 @@ func NewEventProcessor(
 	lu LoadUserSvc,
 	su SaveUserSvc,
 	ic IdempotencyCheckerSvc,
+	vdv service.VoiceDurationValidator,
 ) EventProcessor {
 	return &eventProcessor{
 		urp: urp,
 		lu:  lu,
 		su:  su,
 		ic:  ic,
+		vdv: vdv,
 	}
 }
 
@@ -84,6 +88,7 @@ func (e *eventProcessor) Execute(ctx context.Context, event domain.Event) error 
 	}()
 
 	// TODO: validate eventProcessor
+	// write svc with sending grpc rq and write test. think how to mock grpc client
 	// audio length and error to user bout validating error
 	//_ = e.validateVoiceUC.Execute(0, 0)
 

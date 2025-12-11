@@ -8,24 +8,32 @@ import (
 	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-// todo: main must load the app config, logger, initialize the worker app and do shutdown by signal
 func main() {
+	cfg := config.MustLoadConfig()
 	ctx := logging.Init()
-	cfg := &config.Config{}
 
 	client := connectToRedis(ctx, cfg)
 	defer client.Close()
+	slog.InfoContext(ctx, "Redis connection established")
+
 	pool := connectToPostgres(ctx, cfg)
 	defer pool.Close()
+	slog.InfoContext(ctx, "Postgres connection established")
 
-	application := app.New(cfg, client, pool)
+	conn := grpcClientConnection(cfg)
+	defer conn.Close()
+	slog.InfoContext(ctx, "GRPC server connection established")
+
+	application := app.New(cfg, client, pool, conn)
 
 	ctx, cancel := context.WithCancel(ctx)
 	go application.Worker.MustRun(ctx)
@@ -37,35 +45,39 @@ func main() {
 	cancel()
 }
 
-func connectToPostgres(ctx context.Context, _ *config.Config) *pgxpool.Pool {
-	pool, err := postgres.NewClient(ctx, config.Config{
-		Username: "postgres",
-		Password: "admin",
-		Hostname: "localhost",
-		Port:     "5432",
-		Database: "postgres",
-		RetryNum: 3,
-		Delay:    time.Second,
-	})
+func grpcClientConnection(cfg *config.Config) *grpc.ClientConn {
+	conn, err := grpc.NewClient(
+		net.JoinHostPort(cfg.Grpc.Host, cfg.Grpc.Port),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic("Grpc server connection failed")
+	}
+	return conn
+}
+
+func connectToPostgres(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
+	pool, err := postgres.NewClient(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
-
-	slog.InfoContext(ctx, "successfully connected to postgres")
 	return pool
 }
 
-func connectToRedis(ctx context.Context, _ *config.Config) *redis.Client {
+func connectToRedis(ctx context.Context, cfg *config.Config) *redis.Client {
+	// todo: wrap conn creation
 	c := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		//Addr:     "localhost:6379",
+		Addr:               net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
+		Password:           cfg.Redis.Password, // no password set
+		Username:           cfg.Redis.Username,
+		DB:                 cfg.Redis.Database, // use default DB
+		DialerRetries:      cfg.Redis.DialerRetries,
+		DialerRetryTimeout: cfg.Redis.DialerRetryTimeout,
 	})
 	c.FlushDB(ctx)
 	ping := c.Ping(ctx)
 	if _, err := ping.Result(); err != nil {
 		panic(err)
 	}
-	slog.InfoContext(ctx, "successfully connected to redis")
 	return c
 }

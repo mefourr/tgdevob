@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/worker/config"
 	"github.com/mefourr/tgdevob/worker/internal/interfaces/kafka"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
@@ -11,19 +12,15 @@ import (
 )
 
 type Consumer struct {
+	cfg     *config.Config
 	ready   chan struct{}
-	Brokers []string
-	Topic   string
-	Group   string
 	handler *kafka.EventHandler
 }
 
-func NewConsumer(brokers []string, topic string, group string, handler *kafka.EventHandler) *Consumer {
+func NewConsumer(cfg *config.Config, handler *kafka.EventHandler) *Consumer {
 	return &Consumer{
+		cfg:     cfg,
 		ready:   make(chan struct{}),
-		Brokers: brokers,
-		Topic:   topic,
-		Group:   group,
 		handler: handler,
 	}
 }
@@ -47,7 +44,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 
-			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topic", c.Topic, "group", c.Group)
+			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topic", c.cfg.Kafka.Topic, "group", c.cfg.Kafka.Group)
 
 			if err := c.handler.Handle(ctx, message); err != nil {
 				slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to process message", "error", err)
@@ -61,7 +58,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 }
 
 func (c *Consumer) Consume(ctx context.Context) error {
-	client, err := newConsumerGroup(c.Group, c.Brokers)
+	client, err := newConsumerGroup(c.cfg.Kafka.Group, c.cfg.Kafka.Bootstraps)
 	if err != nil {
 		return err
 	}
@@ -73,7 +70,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		for {
-			if err := client.Consume(ctx, []string{c.Topic}, c); err != nil {
+			if err := client.Consume(ctx, []string{c.cfg.Kafka.Topic}, c); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by", "err", err)
 					return
