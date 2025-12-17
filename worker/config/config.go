@@ -12,9 +12,9 @@ type Config struct {
 		Version string
 	} `mapstructure:"app"`
 	Kafka struct {
-		Bootstraps []string
-		Group      string
-		Topic      string
+		BootstrapServers []string
+		Group            string
+		Topic            string
 	} `mapstructure:"kafka"`
 	Postgres struct {
 		Database string

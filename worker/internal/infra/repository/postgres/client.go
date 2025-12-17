@@ -25,7 +25,7 @@ type Client interface {
 func NewClient(ctx context.Context, conf *config.Config) (pool *pgxpool.Pool, err error) {
 	hp := net.JoinHostPort(conf.Postgres.Host, conf.Postgres.Port)
 	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s", conf.Postgres.Username, conf.Postgres.Password, hp, conf.Postgres.Database)
-	slog.InfoContext(ctx, "try to connect to psql by", "dsn", dsn)
+	slog.DebugContext(ctx, "try to connect to psql by", "dsn", dsn)
 
 	err = repeatable.Connect(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)

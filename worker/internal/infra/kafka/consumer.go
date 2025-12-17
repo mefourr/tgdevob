@@ -57,20 +57,19 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 	}
 }
 
-func (c *Consumer) Consume(ctx context.Context) error {
-	client, err := newConsumerGroup(c.cfg.Kafka.Group, c.cfg.Kafka.Bootstraps)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
+func (c *Consumer) Consume(ctx context.Context, group sarama.ConsumerGroup, topics []string) error {
+	//client, err := newConsumerGroup(c.cfg.Kafka.Group, c.cfg.Kafka.BootstrapServers)
+	//if err != nil {
+	//	return err
+	//}
+	//defer client.Close()
 	wg := &sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
-			if err := client.Consume(ctx, []string{c.cfg.Kafka.Topic}, c); err != nil {
+			if err := group.Consume(ctx, topics, c); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
 					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by", "err", err)
 					return

@@ -5,13 +5,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mefourr/tgdevob/worker/config"
 	"github.com/mefourr/tgdevob/worker/internal/app"
+	grpccon "github.com/mefourr/tgdevob/worker/internal/infra/grpc"
 	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
+	rediscon "github.com/mefourr/tgdevob/worker/internal/infra/repository/redis"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log/slog"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,14 +29,14 @@ func main() {
 	defer pool.Close()
 	slog.InfoContext(ctx, "Postgres connection established")
 
-	conn := grpcClientConnection(cfg)
+	conn := grpcClientConnection(ctx, cfg)
 	defer conn.Close()
 	slog.InfoContext(ctx, "GRPC server connection established")
 
 	application := app.New(cfg, client, pool, conn)
 
 	ctx, cancel := context.WithCancel(ctx)
-	go application.Worker.MustRun(ctx)
+	go application.Worker.MustRun(ctx, *cfg)
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -45,14 +45,12 @@ func main() {
 	cancel()
 }
 
-func grpcClientConnection(cfg *config.Config) *grpc.ClientConn {
-	conn, err := grpc.NewClient(
-		net.JoinHostPort(cfg.Grpc.Host, cfg.Grpc.Port),
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+func grpcClientConnection(ctx context.Context, cfg *config.Config) *grpc.ClientConn {
+	c, err := grpccon.NewClient(ctx, cfg)
 	if err != nil {
-		panic("Grpc server connection failed")
+		panic(err)
 	}
-	return conn
+	return c
 }
 
 func connectToPostgres(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
@@ -64,20 +62,9 @@ func connectToPostgres(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 }
 
 func connectToRedis(ctx context.Context, cfg *config.Config) *redis.Client {
-	// todo: wrap conn creation
-	c := redis.NewClient(&redis.Options{
-		//Addr:     "localhost:6379",
-		Addr:               net.JoinHostPort(cfg.Redis.Host, cfg.Redis.Port),
-		Password:           cfg.Redis.Password, // no password set
-		Username:           cfg.Redis.Username,
-		DB:                 cfg.Redis.Database, // use default DB
-		DialerRetries:      cfg.Redis.DialerRetries,
-		DialerRetryTimeout: cfg.Redis.DialerRetryTimeout,
-	})
-	c.FlushDB(ctx)
-	ping := c.Ping(ctx)
-	if _, err := ping.Result(); err != nil {
+	client, err := rediscon.NewClient(ctx, cfg)
+	if err != nil {
 		panic(err)
 	}
-	return c
+	return client
 }
