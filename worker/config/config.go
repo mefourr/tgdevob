@@ -14,7 +14,7 @@ type Config struct {
 	Kafka struct {
 		BootstrapServers []string
 		Group            string
-		Topic            string
+		Topics           []string
 	} `mapstructure:"kafka"`
 	Postgres struct {
 		Database string

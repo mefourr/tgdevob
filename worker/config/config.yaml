@@ -5,7 +5,7 @@ app:
 kafka:
   bootstrapServers: [ "localhost:9092" ]
   group: "example"
-  topic: "tg_requests"
+  topics: [ "tg_requests" ]
 
 postgres:
   database: "postgres"

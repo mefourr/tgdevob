@@ -36,13 +36,18 @@ func main() {
 	application := app.New(cfg, client, pool, conn)
 
 	ctx, cancel := context.WithCancel(ctx)
-	go application.Worker.MustRun(ctx, *cfg)
+	closed := make(chan error)
+	go func() {
+		closed <- application.Worker.MustRun(ctx, *cfg)
+	}()
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	<-shutdown
 	cancel()
+
+	application.Worker.Shutdown(ctx, closed)
 }
 
 func grpcClientConnection(ctx context.Context, cfg *config.Config) *grpc.ClientConn {

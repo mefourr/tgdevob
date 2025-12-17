@@ -4,29 +4,25 @@ import (
 	"context"
 	"errors"
 	"github.com/IBM/sarama"
-	"github.com/mefourr/tgdevob/worker/config"
 	"github.com/mefourr/tgdevob/worker/internal/interfaces/kafka"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
-	"sync"
 )
 
 type Consumer struct {
-	cfg     *config.Config
-	ready   chan struct{}
 	handler *kafka.EventHandler
+	Ready   chan struct{}
 }
 
-func NewConsumer(cfg *config.Config, handler *kafka.EventHandler) *Consumer {
+func NewConsumer(handler *kafka.EventHandler) *Consumer {
 	return &Consumer{
-		cfg:     cfg,
-		ready:   make(chan struct{}),
 		handler: handler,
+		Ready:   make(chan struct{}),
 	}
 }
 
 func (c *Consumer) Setup(sarama.ConsumerGroupSession) error {
-	close(c.ready)
+	close(c.Ready)
 	return nil
 }
 
@@ -44,7 +40,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 
-			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topic", c.cfg.Kafka.Topic, "group", c.cfg.Kafka.Group)
+			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topics", c.cfg.Kafka.Topics, "group", c.cfg.Kafka.Group)
 
 			if err := c.handler.Handle(ctx, message); err != nil {
 				slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to process message", "error", err)
@@ -58,54 +54,20 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 }
 
 func (c *Consumer) Consume(ctx context.Context, group sarama.ConsumerGroup, topics []string) error {
-	//client, err := newConsumerGroup(c.cfg.Kafka.Group, c.cfg.Kafka.BootstrapServers)
-	//if err != nil {
-	//	return err
-	//}
-	//defer client.Close()
-	wg := &sync.WaitGroup{}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			if err := group.Consume(ctx, topics, c); err != nil {
-				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by", "err", err)
-					return
-				}
-				slog.ErrorContext(logging.ErrorCtx(ctx, err), "error from consumer")
+	for {
+		if err := group.Consume(ctx, topics, c); err != nil {
+			if errors.Is(err, sarama.ErrClosedConsumerGroup) {
+				slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by", "err", err)
+				return err
 			}
-
-			if ctx.Err() != nil {
-				slog.InfoContext(ctx, "consumer group closed by cancellation")
-				return
-			}
-
-			c.ready = make(chan struct{})
+			slog.ErrorContext(logging.ErrorCtx(ctx, err), "error from consumer")
 		}
-	}()
 
-	// Wait until the consumer session is ready
-	<-c.ready
-	slog.InfoContext(ctx, "Sarama consumer up and running!...")
+		if ctx.Err() != nil {
+			slog.InfoContext(ctx, "consumer group closed by cancellation")
+			return ctx.Err()
+		}
 
-	select {
-	case <-ctx.Done():
-		slog.InfoContext(ctx, "kafka.Consume: context cancelled")
+		c.Ready = make(chan struct{})
 	}
-
-	wg.Wait()
-
-	slog.InfoContext(ctx, "Sarama consumer successfully closed")
-	return nil
-}
-
-func newConsumerGroup(group string, brokers []string) (sarama.ConsumerGroup, error) {
-	cfg := sarama.NewConfig()
-	cfg.Producer.Return.Errors = true
-	cfg.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{sarama.NewBalanceStrategySticky()}
-	cfg.Consumer.Offsets.Initial = sarama.OffsetOldest
-
-	return sarama.NewConsumerGroup(brokers, group, cfg)
 }
