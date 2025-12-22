@@ -40,7 +40,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 				return nil
 			}
 
-			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topics", c.cfg.Kafka.Topics, "group", c.cfg.Kafka.Group)
+			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topic", message.Topic, "key", message.Key)
 
 			if err := c.handler.Handle(ctx, message); err != nil {
 				slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to process message", "error", err)

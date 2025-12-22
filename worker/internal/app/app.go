@@ -40,15 +40,13 @@ func initConsumer(
 		cache        = rediscache.New(client)
 		repo         = postgres.New(pool)
 	)
-	return kafka.NewConsumer(
-		ikafka.NewEventHandler(
-			ikafka.NewEventProcessor(
-				service.NewParserSvc(),
-				service.NewLoadUserSvc(cache, repo),
-				service.NewSaveUserSvc(cache),
-				service.NewChecker(),
-				service.NewVoiceDurationValidator(grpcProducer),
-			),
+	return kafka.NewConsumer(ikafka.NewEventHandler(
+		ikafka.NewEventProcessor(
+			service.NewParserSvc(),
+			service.NewLoadUserSvc(cache, repo),
+			service.NewSaveUserSvc(cache),
+			service.NewChecker(),
+			service.NewVoiceDurationValidator(grpcProducer),
 		),
-	)
+	))
 }
