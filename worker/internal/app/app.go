@@ -41,7 +41,6 @@ func initConsumer(
 		repo         = postgres.New(pool)
 	)
 	return kafka.NewConsumer(
-		cfg,
 		ikafka.NewEventHandler(
 			ikafka.NewEventProcessor(
 				service.NewParserSvc(),

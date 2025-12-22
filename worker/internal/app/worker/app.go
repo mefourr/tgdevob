@@ -32,7 +32,7 @@ func (a App) run(ctx context.Context, cfg config.Config) error {
 	defer group.Close()
 
 	wg := &sync.WaitGroup{}
-	errs := make(chan error, 1)
+	errs := make(chan error, 1) // todo: understand why this chan is buffered
 
 	wg.Add(1)
 
