@@ -2,14 +2,10 @@ syntax = "proto3";
 package msg.voice.validator.srv.v1;
 option go_package = "github.com/mefourr/tgdevob/proto/voice-msg-validator/v1/pb";
 
-import "google/protobuf/duration.proto";
-
 message VoiceMessageDataRq {
-  int64 fileSize = 1;
-  int64 duration = 2;
-  google.protobuf.Duration du = 3;
+  float duration = 1;
 }
 
-message ValidatedResultRs {
-  bool isValidated = 1;
+message ValidationResultRs {
+  bool ok = 1;
 }

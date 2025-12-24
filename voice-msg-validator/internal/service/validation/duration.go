@@ -3,11 +3,11 @@ package validation
 import (
 	"context"
 	"errors"
-	"google.golang.org/protobuf/types/known/durationpb"
+	"log/slog"
 )
 
 type Validator interface {
-	Validate(ctx context.Context, duration *durationpb.Duration, fileSize int64) (res bool, err error)
+	Validate(ctx context.Context, duration float32) error
 }
 
 type VoiceMsgValidator struct{}
@@ -16,9 +16,15 @@ func New() Validator {
 	return &VoiceMsgValidator{}
 }
 
-func (v *VoiceMsgValidator) Validate(ctx context.Context, duration *durationpb.Duration, fileSize int64) (res bool, err error) {
-	if fileSize > 2000 {
-		return false, errors.New("invalid file size")
+// TODO: move to config
+const limit float32 = 2000
+
+var ErrDurationIsTooLong = errors.New("duration limit (2000sec) exceeded")
+
+func (v VoiceMsgValidator) Validate(ctx context.Context, duration float32) error {
+	slog.InfoContext(ctx, "validating duration", "duration", duration, "limit", limit)
+	if duration > limit {
+		return ErrDurationIsTooLong
 	}
-	return true, nil
+	return nil
 }

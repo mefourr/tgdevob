@@ -4,6 +4,6 @@ option go_package = "github.com/mefourr/tgdevob/proto/voice-msg-validator/v1/pb"
 
 import "v1/message.proto";
 
-service ValidateVMLength {
-  rpc ValidateVMLength(VoiceMessageDataRq) returns (ValidatedResultRs) {}
+service VoiceMessageDurationValidator {
+  rpc Validate(VoiceMessageDataRq) returns (ValidationResultRs) {}
 }

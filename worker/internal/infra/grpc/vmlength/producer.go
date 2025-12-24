@@ -4,22 +4,27 @@ import (
 	"context"
 	"github.com/mefourr/tgdevob/proto/voice-msg-validator/pb/v1"
 	"google.golang.org/grpc"
-	"time"
 )
 
 type GRPCProducer interface {
-	produce(ctx context.Context, duration time.Duration) (bool, error)
+	Send(ctx context.Context, duration float32) error
 }
 
 type durationValidator struct {
-	client pb.ValidateVMLengthClient
+	client pb.VoiceMessageDurationValidatorClient
 }
 
 func New(conn *grpc.ClientConn) GRPCProducer {
-	return &durationValidator{client: pb.NewValidateVMLengthClient(conn)}
+	return &durationValidator{client: pb.NewVoiceMessageDurationValidatorClient(conn)}
 }
 
-func (g *durationValidator) produce(_ context.Context, _ time.Duration) (bool, error) {
-	//TODO implement me
-	panic("implement me")
+func (d *durationValidator) Send(ctx context.Context, duration float32) error {
+	_, err := d.client.Validate(ctx, &pb.VoiceMessageDataRq{
+		Duration: duration,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

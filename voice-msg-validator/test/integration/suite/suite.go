@@ -14,7 +14,7 @@ import (
 type Suite struct {
 	*testing.T
 	Cfg        *config.Config
-	VVMLClient pb.ValidateVMLengthClient
+	VVMLClient pb.VoiceMessageDurationValidatorClient
 }
 
 const (
@@ -44,6 +44,6 @@ func New(t *testing.T) (context.Context, *Suite) {
 	return ctx, &Suite{
 		T:          t,
 		Cfg:        cfg,
-		VVMLClient: pb.NewValidateVMLengthClient(conn),
+		VVMLClient: pb.NewVoiceMessageDurationValidatorClient(conn),
 	}
 }

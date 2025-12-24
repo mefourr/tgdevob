@@ -51,7 +51,7 @@ func (a App) run(ctx context.Context, cfg config.Config) error {
 	case <-ctx.Done():
 		slog.InfoContext(ctx, "kafka.Consume: context cancelled")
 	case err = <-errs:
-		slog.InfoContext(ctx, "kafka.Consume: sarama consumer error:", err)
+		slog.InfoContext(ctx, "kafka.Consume: sarama consumer error", "err", err)
 	}
 
 	wg.Wait()

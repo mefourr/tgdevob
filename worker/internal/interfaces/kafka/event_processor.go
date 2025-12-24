@@ -3,11 +3,16 @@ package kafka
 import (
 	"context"
 	"github.com/mefourr/tgdevob/worker/internal/domain"
-	"github.com/mefourr/tgdevob/worker/internal/service"
 	"github.com/mefourr/tgdevob/worker/pkg/logging"
 	"log/slog"
 	"strconv"
+	"time"
 )
+
+//go:generate go run github.com/vektra/mockery/v3@v3.6.0
+type VoiceDurationValidator interface {
+	Execute(ctx context.Context, duration time.Duration) error
+}
 
 //go:generate go run github.com/vektra/mockery/v3@v3.6.0
 type IdempotencyCheckerSvc interface {
@@ -34,38 +39,26 @@ type EventProcessor interface {
 }
 
 type eventProcessor struct {
-	urp UserRequestParserSvc
-	lu  LoadUserSvc
-	su  SaveUserSvc
-	ic  IdempotencyCheckerSvc
-	vdv service.VoiceDurationValidator
+	userRequestParser      UserRequestParserSvc
+	loadUser               LoadUserSvc
+	saveUser               SaveUserSvc
+	idempotencyChecker     IdempotencyCheckerSvc
+	voiceDurationValidator VoiceDurationValidator
 }
 
-func NewEventProcessor(
-	urp UserRequestParserSvc,
-	lu LoadUserSvc,
-	su SaveUserSvc,
-	ic IdempotencyCheckerSvc,
-	vdv service.VoiceDurationValidator,
-) EventProcessor {
-	return &eventProcessor{
-		urp: urp,
-		lu:  lu,
-		su:  su,
-		ic:  ic,
-		vdv: vdv,
-	}
+func NewEventProcessor(userRequestParser UserRequestParserSvc, loadUser LoadUserSvc, saveUser SaveUserSvc, idempotencyChecker IdempotencyCheckerSvc, voiceDurationValidator VoiceDurationValidator) *eventProcessor {
+	return &eventProcessor{userRequestParser: userRequestParser, loadUser: loadUser, saveUser: saveUser, idempotencyChecker: idempotencyChecker, voiceDurationValidator: voiceDurationValidator}
 }
 
 func (e *eventProcessor) Execute(ctx context.Context, event domain.Event) error {
-	m, err := e.urp.Execute(event.Value)
+	m, err := e.userRequestParser.Execute(event.Value)
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to unmarshal eventProcessor")
 		return err
 	}
 
 	// load and then cache user
-	u, err := e.lu.Execute(ctx, *m, strconv.FormatInt(m.User.ID, 10))
+	u, err := e.loadUser.Execute(ctx, *m, strconv.FormatInt(m.User.ID, 10))
 	if err != nil {
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to load user")
 		return err
@@ -73,7 +66,7 @@ func (e *eventProcessor) Execute(ctx context.Context, event domain.Event) error 
 
 	if u.MustValidated {
 		// TODO: idempotency guarantee
-		if ok := e.ic.Execute(u.LastRequest.MessageID, m.Request.MessageID); !ok {
+		if ok := e.idempotencyChecker.Execute(u.LastRequest.MessageID, m.Request.MessageID); !ok {
 			slog.ErrorContext(logging.ErrorCtx(ctx, nil), "Message that we just got has been already processed", "prev_message_id", u.LastRequest.MessageID, "current_message_id", m.Request.MessageID)
 			// TODO: add logic with sending prev recognition result from postgres
 			return nil
@@ -82,15 +75,17 @@ func (e *eventProcessor) Execute(ctx context.Context, event domain.Event) error 
 
 	slog.InfoContext(ctx, "updating user in cache", "user", u)
 	go func() {
-		if err := e.su.Execute(ctx, u, *m); err != nil {
+		if err := e.saveUser.Execute(ctx, u, *m); err != nil {
 			slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to save user in cache")
 		}
 	}()
 
-	// TODO: validate eventProcessor
-	// write svc with sending grpc rq and write test. think how to mock grpc client
-	// audio length and error to user bout validating error
-	//_ = e.validateVoiceUC.Execute(0, 0)
+	// TODO: write test
+	slog.InfoContext(ctx, "validating user's voice message duration", "duration", m.Request.Voice.Duration)
+	if err = e.voiceDurationValidator.Execute(ctx, time.Duration(m.Request.Voice.Duration)); err != nil {
+		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to validate voice duration")
+		return nil
+	}
 
 	// TODO: S3-storage grpcapp -> download/upload voice msg
 	// storage for voice message. Im gonna use yandex MessageS3SaverSvc-storage object storage

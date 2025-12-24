@@ -26,6 +26,6 @@ redis:
   dialerRetryTimeout: "100ms"
 
 grpc:
-  host: ""
+  host: "localhost"
   port: "5551"
   timeout: "5s"

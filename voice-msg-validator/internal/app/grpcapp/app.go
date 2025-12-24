@@ -41,7 +41,6 @@ func (a *App) run(ctx context.Context) error {
 	slog.InfoContext(ctx, "server listening at", "addr", lis.Addr())
 
 	if err := a.srv.Serve(lis); err != nil {
-		//errors.New(fmt.Sprintf())
 		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to serve:", "err", err)
 		return err
 	}
