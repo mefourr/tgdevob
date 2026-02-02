@@ -4,11 +4,10 @@ filename: "{{.InterfaceName}}.go"
 pkgname: mocks
 template: testify
 packages:
-  github.com/mefourr/tgdevob/worker/internal/service:
+  github.com/mefourr/tgdevob/worker/internal/user/usecase:
     interfaces:
-      UserCacheSaver:
-      UserCacheFinder:
-      UserFinder:
-      IdempotencyCheckerSvc:
-      UserRequestParserSvc:
+      Postgres:
+      Redis:
+  github.com/mefourr/tgdevob/worker/internal/validator/usecase:
+    interfaces:
       GRPCProducer:

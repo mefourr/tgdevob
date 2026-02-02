@@ -3,16 +3,16 @@ package worker
 import (
 	"context"
 	"github.com/mefourr/tgdevob/worker/config"
-	"github.com/mefourr/tgdevob/worker/internal/infra/kafka"
+	"github.com/mefourr/tgdevob/worker/internal/controller/kafka_consumer"
 	"log/slog"
 	"sync"
 )
 
 type App struct {
-	con *kafka.Consumer
+	con *kafka_consumer.Consumer
 }
 
-func New(con *kafka.Consumer) *App {
+func New(con *kafka_consumer.Consumer) *App {
 	return &App{con: con}
 }
 
@@ -25,7 +25,7 @@ func (a App) MustRun(ctx context.Context, cfg config.Config) error {
 }
 
 func (a App) run(ctx context.Context, cfg config.Config) error {
-	group, err := kafka.NewConsumerGroup(cfg)
+	group, err := kafka_consumer.NewConsumerGroup(cfg)
 	if err != nil {
 		return err
 	}
@@ -49,9 +49,9 @@ func (a App) run(ctx context.Context, cfg config.Config) error {
 
 	select {
 	case <-ctx.Done():
-		slog.InfoContext(ctx, "kafka.Consume: context cancelled")
+		slog.InfoContext(ctx, "kafka_consumer.Consume: context cancelled")
 	case err = <-errs:
-		slog.InfoContext(ctx, "kafka.Consume: sarama consumer error", "err", err)
+		slog.InfoContext(ctx, "kafka_consumer.Consume: sarama consumer error", "err", err)
 	}
 
 	wg.Wait()

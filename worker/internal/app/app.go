@@ -3,13 +3,14 @@ package app
 import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mefourr/tgdevob/worker/config"
+	"github.com/mefourr/tgdevob/worker/internal/adapter/grpc/validator"
+	"github.com/mefourr/tgdevob/worker/internal/adapter/postgres"
+	rediscache "github.com/mefourr/tgdevob/worker/internal/adapter/redis"
 	"github.com/mefourr/tgdevob/worker/internal/app/worker"
-	"github.com/mefourr/tgdevob/worker/internal/infra/grpc/vmlength"
-	"github.com/mefourr/tgdevob/worker/internal/infra/kafka"
-	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
-	rediscache "github.com/mefourr/tgdevob/worker/internal/infra/repository/redis"
-	ikafka "github.com/mefourr/tgdevob/worker/internal/interfaces/kafka"
-	"github.com/mefourr/tgdevob/worker/internal/service"
+	"github.com/mefourr/tgdevob/worker/internal/controller/kafka_consumer"
+	processor_uc "github.com/mefourr/tgdevob/worker/internal/processor/usecase"
+	user_uc "github.com/mefourr/tgdevob/worker/internal/user/usecase"
+	validator_uc "github.com/mefourr/tgdevob/worker/internal/validator/usecase"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 )
@@ -34,19 +35,16 @@ func initConsumer(
 	client *redis.Client,
 	pool *pgxpool.Pool,
 	conn *grpc.ClientConn,
-) *kafka.Consumer {
+) *kafka_consumer.Consumer {
 	var (
-		grpcProducer = vmlength.New(conn)
-		cache        = rediscache.New(client)
-		repo         = postgres.New(pool)
+		grpcProducer = validator.New(conn)
+		redisCache   = rediscache.New(client)
+		postgresRepo = postgres.New(pool)
 	)
-	return kafka.NewConsumer(ikafka.NewEventHandler(
-		ikafka.NewEventProcessor(
-			service.NewParserSvc(),
-			service.NewLoadUserSvc(cache, repo),
-			service.NewSaveUserSvc(cache),
-			service.NewChecker(),
-			service.NewVoiceDurationValidator(grpcProducer),
+	return kafka_consumer.New(kafka_consumer.NewEventHandler(
+		processor_uc.New(
+			user_uc.New(redisCache, postgresRepo),
+			validator_uc.New(grpcProducer),
 		),
 	))
 }

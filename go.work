@@ -5,4 +5,6 @@ use (
 	./tgbot
 	./voice-msg-validator
 	./worker
+	./s3
+	./authentication
 )

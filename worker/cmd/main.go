@@ -5,10 +5,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mefourr/tgdevob/worker/config"
 	"github.com/mefourr/tgdevob/worker/internal/app"
-	grpccon "github.com/mefourr/tgdevob/worker/internal/infra/grpc"
-	"github.com/mefourr/tgdevob/worker/internal/infra/repository/postgres"
-	rediscon "github.com/mefourr/tgdevob/worker/internal/infra/repository/redis"
-	"github.com/mefourr/tgdevob/worker/pkg/logging"
+	"github.com/mefourr/tgdevob/worker/pkg/grpcclient"
+	"github.com/mefourr/tgdevob/worker/pkg/logger"
+	"github.com/mefourr/tgdevob/worker/pkg/postgres"
+	redisclient "github.com/mefourr/tgdevob/worker/pkg/redis"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"log/slog"
@@ -19,18 +19,15 @@ import (
 
 func main() {
 	cfg := config.MustLoadConfig()
-	ctx := logging.Init()
+	ctx := logger.Init()
 
 	client := connectToRedis(ctx, cfg)
-	defer client.Close()
 	slog.InfoContext(ctx, "Redis connection established")
 
 	pool := connectToPostgres(ctx, cfg)
-	defer pool.Close()
 	slog.InfoContext(ctx, "Postgres connection established")
 
 	conn := grpcClientConnection(ctx, cfg)
-	defer conn.Close()
 	slog.InfoContext(ctx, "GRPC server connection established")
 
 	application := app.New(cfg, client, pool, conn)
@@ -48,10 +45,13 @@ func main() {
 	cancel()
 
 	application.Worker.Shutdown(ctx, closed)
+	client.Close()
+	pool.Close()
+	conn.Close()
 }
 
 func grpcClientConnection(ctx context.Context, cfg *config.Config) *grpc.ClientConn {
-	c, err := grpccon.NewClient(ctx, cfg)
+	c, err := grpcclient.NewClient(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func connectToPostgres(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 }
 
 func connectToRedis(ctx context.Context, cfg *config.Config) *redis.Client {
-	client, err := rediscon.NewClient(ctx, cfg)
+	client, err := redisclient.NewClient(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
