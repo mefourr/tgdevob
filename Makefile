@@ -13,3 +13,14 @@ kafka:
 ginstall:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+auth_build:
+	docker build -f authentication/Dockerfile -t auth .
+
+auth_run:
+	docker run -d -t -i \
+		-e AUTH_FILE=authorized_key.json \
+		-e ID \
+		-e SERVICE_ACCOUNT_ID \
+		-p 5552:5552 \
+		auth

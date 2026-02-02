@@ -1,0 +1,10 @@
+syntax = "proto3";
+package mefourr.auth;
+option go_package = "github.com/mefourr/tgdevob/proto/auth";
+
+import "google/protobuf/timestamp.proto";
+
+message GeneratorRs {
+  string token = 1;
+  google.protobuf.Timestamp expires_at = 2;
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+package mefourr.auth;
+option go_package = "github.com/mefourr/tgdevob/proto/auth";
+
+import "auth/v1/message.proto";
+import "google/protobuf/empty.proto";
+
+service IamTokenGenerator {
+  rpc GetIamToken(google.protobuf.Empty) returns (GeneratorRs);
+}

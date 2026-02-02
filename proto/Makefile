@@ -3,3 +3,8 @@ validator:
 		voice-msg-validator/v1/*.proto \
 		--go_out=voice-msg-validator/pb --go_opt=paths=source_relative \
 	 	--go-grpc_out=voice-msg-validator/pb --go-grpc_opt=paths=source_relative
+
+auth_gen:
+	protoc auth/v1/*.proto \
+		--go_out=auth/pb --go_opt=paths=source_relative \
+	 	--go-grpc_out=auth/pb --go-grpc_opt=paths=source_relative

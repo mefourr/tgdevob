@@ -1,0 +1,7 @@
+app:
+  name: auth
+  version: 1.0.0
+
+grpc:
+  port: 5552
+  timeout: 5s
