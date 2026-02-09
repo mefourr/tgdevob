@@ -1,0 +1,11 @@
+syntax = "proto3";
+package mefourr.s3.storage;
+option go_package = "github.com/mefourr/tgdevob/proto/s3_storage";
+
+message TempRs {
+  string smth = 1;
+}
+
+message TempRq {
+  string smth = 1;
+}
