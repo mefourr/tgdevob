@@ -17,7 +17,7 @@ ginstall:
 auth_build:
 	docker build -f authentication/Dockerfile -t auth .
 
-auth_run:
+auth_run: auth_build
 	docker run -d -t -i \
 		-e AUTH_FILE=authorized_key.json \
 		-e ID \
