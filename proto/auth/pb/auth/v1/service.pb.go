@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v5.29.3
-// source: auth/v1/usecase.proto
+// source: auth/v1/service.proto
 
 package auth
 
@@ -25,7 +25,7 @@ var File_auth_v1_service_proto protoreflect.FileDescriptor
 
 const file_auth_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15auth/v1/usecase.proto\x12\fmefourr.auth\x1a\x15auth/v1/message.proto\x1a\x1bgoogle/protobuf/empty.proto2U\n" +
+	"\x15auth/v1/service.proto\x12\fmefourr.auth\x1a\x15auth/v1/message.proto\x1a\x1bgoogle/protobuf/empty.proto2U\n" +
 	"\x11IamTokenGenerator\x12@\n" +
 	"\vGetIamToken\x12\x16.google.protobuf.Empty\x1a\x19.mefourr.auth.GeneratorRsB'Z%github.com/mefourr/tgdevob/proto/authb\x06proto3"
 

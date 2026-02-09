@@ -35,7 +35,7 @@ func (s *ServerAPI) GetIamToken(ctx context.Context, _ *emptypb.Empty) (*auth.Ge
 		slog.ErrorContext(logger.ErrorCtx(ctx, err), "error getting token", "err", err)
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-
+	slog.InfoContext(ctx, "token has been successfully retrieved", "expires at", t.ExpiresAt)
 	return &auth.GeneratorRs{
 		Token:     t.IamToken,
 		ExpiresAt: timestamppb.New(t.ExpiresAt),

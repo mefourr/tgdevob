@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: auth/v1/usecase.proto
+// source: auth/v1/service.proto
 
 package auth
 
@@ -23,7 +23,7 @@ const (
 	IamTokenGenerator_GetIamToken_FullMethodName = "/mefourr.auth.IamTokenGenerator/GetIamToken"
 )
 
-// IamTokenGeneratorClient is the client API for IamTokenGenerator usecase.
+// IamTokenGeneratorClient is the client API for IamTokenGenerator service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type IamTokenGeneratorClient interface {
@@ -48,7 +48,7 @@ func (c *iamTokenGeneratorClient) GetIamToken(ctx context.Context, in *emptypb.E
 	return out, nil
 }
 
-// IamTokenGeneratorServer is the server API for IamTokenGenerator usecase.
+// IamTokenGeneratorServer is the server API for IamTokenGenerator service.
 // All implementations must embed UnimplementedIamTokenGeneratorServer
 // for forward compatibility.
 type IamTokenGeneratorServer interface {
@@ -69,7 +69,7 @@ func (UnimplementedIamTokenGeneratorServer) GetIamToken(context.Context, *emptyp
 func (UnimplementedIamTokenGeneratorServer) mustEmbedUnimplementedIamTokenGeneratorServer() {}
 func (UnimplementedIamTokenGeneratorServer) testEmbeddedByValue()                           {}
 
-// UnsafeIamTokenGeneratorServer may be embedded to opt out of forward compatibility for this usecase.
+// UnsafeIamTokenGeneratorServer may be embedded to opt out of forward compatibility for this service.
 // Use of this interface is not recommended, as added methods to IamTokenGeneratorServer will
 // result in compilation errors.
 type UnsafeIamTokenGeneratorServer interface {
@@ -105,7 +105,7 @@ func _IamTokenGenerator_GetIamToken_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-// IamTokenGenerator_ServiceDesc is the grpc.ServiceDesc for IamTokenGenerator usecase.
+// IamTokenGenerator_ServiceDesc is the grpc.ServiceDesc for IamTokenGenerator service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var IamTokenGenerator_ServiceDesc = grpc.ServiceDesc{
@@ -118,5 +118,5 @@ var IamTokenGenerator_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth/v1/usecase.proto",
+	Metadata: "auth/v1/service.proto",
 }
