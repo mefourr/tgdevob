@@ -35,7 +35,7 @@ type Config struct {
 	Logging struct {
 		level string
 		file  string
-	} `mapstructure:"logging"`
+	} `mapstructure:"logger"`
 }
 
 func LoadConfig(ctx context.Context) *Config {

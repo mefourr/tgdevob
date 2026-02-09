@@ -8,12 +8,12 @@ import (
 	rqhandler "github.com/mefourr/tgdevob/tgbot/internal/bot"
 	"github.com/mefourr/tgdevob/tgbot/internal/kafka/consumer"
 	"github.com/mefourr/tgdevob/tgbot/internal/kafka/consumer/startup"
-	"github.com/mefourr/tgdevob/tgbot/pkg/logging"
+	"github.com/mefourr/tgdevob/tgbot/pkg/logger"
 	"log/slog"
 )
 
 func main() {
-	ctx := logging.Init()
+	ctx := logger.Init()
 	slog.InfoContext(ctx, "Logger initialized")
 
 	// TODO: come up with smt better with config impl

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
+	"github.com/mefourr/tgdevob/msg/voice/validator/pkg/logger"
 	"github.com/mefourr/tgdevob/tgbot/internal/kafka/consumer/startup"
-	"github.com/mefourr/tgdevob/tgbot/pkg/logging"
 	"golang.org/x/net/context"
 	"log/slog"
 	"os"
@@ -48,7 +48,7 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 
 			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 
-			//_ = c.handler.Process(context.Background(), message)
+			//_ = c.controller.Process(context.Background(), message)
 			session.MarkMessage(message, "")
 		case <-session.Context().Done():
 			return nil
@@ -68,7 +68,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 
 	defer func() {
 		if err := client.Close(); err != nil {
-			slog.ErrorContext(logging.ErrorCtx(ctx, err), "error closing consumer group client")
+			slog.ErrorContext(logger.ErrorCtx(ctx, err), "error closing consumer group client")
 		}
 	}()
 
@@ -80,14 +80,14 @@ func (c *Consumer) Consume(ctx context.Context) error {
 		for {
 			if err := client.Consume(ctx, []string{c.Topic}, c); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					slog.ErrorContext(logging.ErrorCtx(ctx, err), "consumer group closed by:", err)
+					slog.ErrorContext(logger.ErrorCtx(ctx, err), "consumer group closed by:", err)
 					return
 				}
-				slog.ErrorContext(logging.ErrorCtx(ctx, err), "error from consumer")
+				slog.ErrorContext(logger.ErrorCtx(ctx, err), "error from consumer")
 			}
 
 			if ctx.Err() != nil {
-				slog.ErrorContext(logging.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation")
+				slog.ErrorContext(logger.ErrorCtx(ctx, ctx.Err()), "consumer group closed by cancellation")
 				return
 			}
 

@@ -5,7 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mefourr/tgdevob/tgbot/config"
 	"github.com/mefourr/tgdevob/tgbot/internal/kafka"
-	"github.com/mefourr/tgdevob/tgbot/pkg/logging"
+	"github.com/mefourr/tgdevob/tgbot/pkg/logger"
 	"log/slog"
 )
 
@@ -25,16 +25,16 @@ func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot
 
 	if update.Message.Voice != nil {
 		slog.InfoContext(ctx, "Update has a voice worker")
-		ctx = logging.WithLogUserName(ctx, update.Message.From.UserName)
-		ctx = logging.WithLogUserID(ctx, update.Message.From.ID)
-		ctx = logging.WithLogFileID(ctx, update.Message.Voice.FileID)
+		ctx = logger.WithLogUserName(ctx, update.Message.From.UserName)
+		ctx = logger.WithLogUserID(ctx, update.Message.From.ID)
+		ctx = logger.WithLogFileID(ctx, update.Message.Voice.FileID)
 		h.handleVoiceMessage(ctx, update)
 		return
 	}
 
 	if update.Message.Text != "" {
 		slog.InfoContext(ctx, "Update has a text worker")
-		ctx = logging.WithLogUserName(ctx, update.Message.From.UserName)
+		ctx = logger.WithLogUserName(ctx, update.Message.From.UserName)
 		h.handleTextMessage(ctx, update, bot)
 		return
 	}
@@ -56,6 +56,6 @@ func (h *Handler) handleTextMessage(ctx context.Context, update tgbotapi.Update,
 	sticker := tgbotapi.NewSticker(update.Message.Chat.ID, tgbotapi.FileID(stickerID))
 
 	if _, err := bot.Send(sticker); err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "Error sending sticker")
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "Error sending sticker")
 	}
 }
