@@ -18,4 +18,4 @@ WORKDIR /root/
 
 COPY --from=builder /app/authentication .
 
-CMD ["./auth"]
+CMD ["/bin/sh", "-c", "./auth > auth_output.log"]

@@ -34,6 +34,7 @@ var ErrDurationIsTooLong = errors.New("generator limit (2000sec) exceeded")
 func (i IamTokenGenerator) GetOrCreateToken(ctx context.Context) (*domain.Token, error) {
 	if i.token.IamToken != "" &&
 		time.Now().Add(30*time.Second).Before(i.token.ExpiresAt) {
+		slog.InfoContext(ctx, "return a cached token", "expires at", i.token.ExpiresAt)
 		return i.token, nil
 	}
 
