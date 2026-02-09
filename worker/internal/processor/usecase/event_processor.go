@@ -55,11 +55,11 @@ func (e *eventProcessor) Execute(ctx context.Context, message *dto.Message) erro
 		return nil
 	}
 
-	// TODO: S3-storage auth -> download/upload voice msg
+	// TODO: S3-storage authT -> download/upload voice msg
 	// storage for voice message. Im gonna use yandex MessageS3SaverSvc-storage object storage
 	//_ = e.storeVoiceUC.Save(*m)
 
-	// TODO: recognition auth
+	// TODO: recognition authT
 	// recognition eventProcessor. Im gonna use yandex stt eventProcessor
 	//rec, _ := e.recognizeUC.Save(*m)
 

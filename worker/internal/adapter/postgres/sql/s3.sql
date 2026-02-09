@@ -1,4 +1,4 @@
--- s3
+-- authT
 DROP TABLE IF EXISTS public.s3_buckets;
 DROP TABLE IF EXISTS public.s3_objects;
 
