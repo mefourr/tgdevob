@@ -1,4 +1,4 @@
-package logging
+package logger
 
 import (
 	"context"
@@ -127,5 +127,5 @@ func Init() context.Context {
 //		slog.ErrorContext(ErrorCtx(ctx, err), "Error: "+err.Error())
 //		return
 //	}
-//	slog.InfoContext(ctx, "handler done")
+//	slog.InfoContext(ctx, "controller done")
 //}

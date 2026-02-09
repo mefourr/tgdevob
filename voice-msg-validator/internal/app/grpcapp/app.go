@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/mefourr/tgdevob/msg/voice/validator/internal/handler/grpc/duration"
-	"github.com/mefourr/tgdevob/worker/pkg/logging"
+	"github.com/mefourr/tgdevob/msg/voice/validator/pkg/logger"
 	"google.golang.org/grpc"
 	"log/slog"
 	"net"
@@ -30,18 +30,18 @@ func (a *App) MustRun(ctx context.Context) {
 }
 
 func (a *App) run(ctx context.Context) error {
-	// TODO: add handler logger attribute to slog
+	// TODO: add controller logger attribute to slog
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", a.port))
 	if err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to listen:", "err", err)
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to listen:", "err", err)
 		return err
 	}
 
 	slog.InfoContext(ctx, "server listening at", "addr", lis.Addr())
 
 	if err := a.srv.Serve(lis); err != nil {
-		slog.ErrorContext(logging.ErrorCtx(ctx, err), "failed to serve:", "err", err)
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to serve:", "err", err)
 		return err
 	}
 

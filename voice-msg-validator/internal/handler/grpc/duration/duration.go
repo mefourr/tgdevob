@@ -10,7 +10,7 @@ import (
 )
 
 type Validator interface {
-	Validate(ctx context.Context, duration float32) error
+	Generate(ctx context.Context, duration float32) error
 }
 
 type ServerAPI struct {
@@ -20,17 +20,20 @@ type ServerAPI struct {
 
 func Register(gRPC *grpc.Server) {
 	// TODO: need pass working interface into &ServerAPI{}
-	pb.RegisterVoiceMessageDurationValidatorServer(gRPC, &ServerAPI{val: validation.New()})
+	pb.RegisterVoiceMessageDurationValidatorServer(
+		gRPC,
+		&ServerAPI{val: validation.New()},
+	)
 }
 
 const succeed bool = true
 
 func (s *ServerAPI) Validate(ctx context.Context, in *pb.VoiceMessageDataRq) (*pb.ValidationResultRs, error) {
 	if in.GetDuration() <= float32(0) {
-		return nil, status.Error(codes.InvalidArgument, "duration cannot be less than 0")
+		return nil, status.Error(codes.InvalidArgument, "generator cannot be less than 0")
 	}
 
-	if err := s.val.Validate(ctx, in.GetDuration()); err != nil {
+	if err := s.val.Generate(ctx, in.GetDuration()); err != nil {
 		// TODO: error type handling
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}

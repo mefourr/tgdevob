@@ -12,7 +12,7 @@ import (
 
 func main() {
 	cfg := config.MustLoadConfig()
-	ctx := logging.Init()
+	ctx := logger.Init()
 
 	slog.InfoContext(ctx, "starting validator", "config", cfg)
 
