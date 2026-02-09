@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/mefourr/tgdevob/msg/voice/validator/config"
 	"github.com/mefourr/tgdevob/msg/voice/validator/internal/app"
-	"github.com/mefourr/tgdevob/msg/voice/validator/pkg/logging"
+	"github.com/mefourr/tgdevob/msg/voice/validator/pkg/logger"
 	"log/slog"
 	"os"
 	"os/signal"
