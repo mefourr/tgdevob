@@ -1,0 +1,19 @@
+app:
+  name: cloud_storage_api
+  version: 0.0.1
+
+grpc:
+  server:
+    host: "localhost"
+    port: 5550
+    timeout: 5s
+  auth:
+    client:
+      host: "localhost"
+      port: 5552
+      timeout: 5s
+  yandex-cloud:
+    client:
+      host: "storage.api.cloud.yandex.net"
+      port: 443
+      timeout: 5s

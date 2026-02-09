@@ -1,0 +1,9 @@
+syntax = "proto3";
+package mefourr.s3.storage;
+option go_package = "github.com/mefourr/tgdevob/proto/s3_storage";
+
+import "s3_storage/v1/message.proto";
+
+service S3Storage {
+  rpc StoreAudio(TempRq) returns (TempRs);
+}
