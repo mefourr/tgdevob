@@ -70,12 +70,13 @@ func (g *GrpcServer) Run(ctx context.Context) error {
 }
 
 func (g *GrpcServer) Shutdown(ctx context.Context) {
+	slog.InfoContext(ctx, "shutting down grpc server")
+	g.srv.GracefulStop()
 	if err := g.auth.Conn.Close(); err != nil {
-		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to shutdown:", "err", err)
-		return
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to close auth connection", "err", err)
 	}
 	if err := g.cloudStorage.Conn.Close(); err != nil {
-		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to shutdown:", "err", err)
-		return
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to close cloud storage connection", "err", err)
 	}
+	slog.InfoContext(ctx, "grpc server stopped")
 }

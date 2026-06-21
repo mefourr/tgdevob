@@ -34,19 +34,21 @@ var ErrDurationIsTooLong = errors.New("generator limit (2000sec) exceeded")
 func (i IamTokenGenerator) GetOrCreateToken(ctx context.Context) (*domain.Token, error) {
 	if i.token.IamToken != "" &&
 		time.Now().Add(30*time.Second).Before(i.token.ExpiresAt) {
-		slog.InfoContext(ctx, "return a cached token", "expires at", i.token.ExpiresAt)
+		slog.DebugContext(ctx, "returning cached token", "expires_at", i.token.ExpiresAt)
 		return i.token, nil
 	}
 
-	slog.InfoContext(ctx, "generating new token")
+	slog.InfoContext(ctx, "cached token missing or expiring soon, requesting new token")
 	immToken, err := getIamToken(ctx)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to get IAM token from Yandex Cloud", "err", err)
 		return nil, err
 	}
 
 	// TODO: think of put key to db
 	i.token.IamToken = immToken.GetIamToken()
 	i.token.ExpiresAt = immToken.GetExpiresAt().AsTime()
+	slog.InfoContext(ctx, "new token stored", "expires_at", i.token.ExpiresAt)
 	return i.token, nil
 }
 
@@ -58,25 +60,32 @@ var (
 
 // token exchange
 func getIamToken(ctx context.Context) (*iam.CreateIamTokenResponse, error) {
+	slog.DebugContext(ctx, "reading private key", "key_file", keyFile)
 	authKey, err := readPrivateKey()
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to read private key", "key_file", keyFile, "err", err)
 		return nil, err
 	}
 
 	credentials, err := ycsdk.ServiceAccountKey(authKey)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to build service account credentials", "err", err)
 		return nil, err
 	}
 
+	slog.DebugContext(ctx, "building Yandex Cloud SDK")
 	sdk, err := ycsdk.Build(ctx, ycsdk.Config{
 		Credentials: credentials,
 	})
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to build Yandex Cloud SDK", "err", err)
 		return nil, err
 	}
 
+	slog.DebugContext(ctx, "signing JWT token", "service_account_id", serviceAccountID, "key_id", keyID)
 	token, err := signedToken()
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to sign JWT token", "err", err)
 		return nil, err
 	}
 
@@ -84,8 +93,10 @@ func getIamToken(ctx context.Context) (*iam.CreateIamTokenResponse, error) {
 		Identity: &iam.CreateIamTokenRequest_Jwt{Jwt: token},
 	}
 
+	slog.DebugContext(ctx, "requesting IAM token from Yandex Cloud")
 	newKey, err := sdk.IAM().IamToken().Create(ctx, iamRequest)
 	if err != nil {
+		slog.ErrorContext(ctx, "Yandex Cloud IAM token request failed", "err", err)
 		return nil, err
 	}
 

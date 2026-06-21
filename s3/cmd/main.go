@@ -5,7 +5,6 @@ import (
 	"github.com/mefourr/tgdevob/s3/internal/app"
 	"github.com/mefourr/tgdevob/s3/pkg/grpcclient"
 	"github.com/mefourr/tgdevob/s3/pkg/logger"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -27,25 +26,30 @@ func main() {
 
 	authClient, err := grpcclient.NewAuthClient(ctx, cfg)
 	if err != nil {
-		log.Fatal(err)
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to create auth grpc client", "err", err)
+		os.Exit(1)
 	}
 	slog.InfoContext(ctx, "auth grpc client connection established")
 
 	application := app.Init(ctx, cfg, authClient)
+	slog.InfoContext(ctx, "application initialized")
 
 	// TODO: think of sync and graceful shutdown
 	go func() {
 		if err := application.S3.Run(ctx); err != nil {
-			log.Fatal(err)
+			slog.ErrorContext(logger.ErrorCtx(ctx, err), "s3 grpc server failed", "err", err)
+			os.Exit(1)
 		}
 	}()
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-	<-shutdown
+	sig := <-shutdown
+	slog.InfoContext(ctx, "received shutdown signal", "signal", sig.String())
 
 	application.S3.Shutdown(ctx)
+	slog.InfoContext(ctx, "app has been shutdown")
 	//ctx := context.Background()
 	////fixme(ctx)
 	//authClient, err := grpc.NewAuthClient("localhost:5552", grpc.WithTransportCredentials(insecure.NewCredentials()))

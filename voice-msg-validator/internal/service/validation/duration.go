@@ -22,8 +22,9 @@ const limit float32 = 2000
 var ErrDurationIsTooLong = errors.New("generator limit (2000sec) exceeded")
 
 func (v VoiceMsgValidator) Generate(ctx context.Context, duration float32) error {
-	slog.InfoContext(ctx, "validating generator", "generator", duration, "limit", limit)
+	slog.InfoContext(ctx, "validating duration", "duration", duration, "limit", limit)
 	if duration > limit {
+		slog.WarnContext(ctx, "duration exceeds limit", "duration", duration, "limit", limit)
 		return ErrDurationIsTooLong
 	}
 	return nil

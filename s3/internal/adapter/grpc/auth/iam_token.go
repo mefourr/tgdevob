@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/mefourr/tgdevob/proto/auth/pb/auth/v1"
 	"github.com/mefourr/tgdevob/s3/internal/domain"
+	"github.com/mefourr/tgdevob/s3/pkg/logger"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"log/slog"
 )
@@ -20,6 +21,7 @@ func (g *grpcYaTokenProvider) GetOrRequestAuthToken(ctx context.Context) (*domai
 	slog.InfoContext(ctx, "ready to get token from IamTokenGeneratorClient")
 	rs, err := g.client.GetIamToken(ctx, &emptypb.Empty{})
 	if err != nil {
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to get IAM token", "err", err)
 		return nil, err
 	}
 	slog.InfoContext(ctx, "Expiration time of generated token", "expires_at", rs.GetExpiresAt().AsTime())

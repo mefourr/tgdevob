@@ -14,7 +14,7 @@ func main() {
 	cfg := config.MustLoadConfig()
 	ctx := logger.Init()
 
-	slog.InfoContext(ctx, "starting validator", "config", cfg)
+	slog.InfoContext(ctx, "starting authentication service", "config", cfg)
 
 	application := app.New(cfg)
 	go application.Auth.MustRun(ctx)

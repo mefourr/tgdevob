@@ -30,12 +30,13 @@ func Register(gRPC *grpc.Server, gen Generator) {
 }
 
 func (s *ServerAPI) GetIamToken(ctx context.Context, _ *emptypb.Empty) (*auth.GeneratorRs, error) {
+	slog.DebugContext(ctx, "GetIamToken request received")
 	t, err := s.gen.GetOrCreateToken(ctx)
 	if err != nil {
-		slog.ErrorContext(logger.ErrorCtx(ctx, err), "error getting token", "err", err)
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to get or create token", "err", err)
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
-	slog.InfoContext(ctx, "token has been successfully retrieved", "expires at", t.ExpiresAt)
+	slog.InfoContext(ctx, "token retrieved successfully", "expires_at", t.ExpiresAt)
 	return &auth.GeneratorRs{
 		Token:     t.IamToken,
 		ExpiresAt: timestamppb.New(t.ExpiresAt),

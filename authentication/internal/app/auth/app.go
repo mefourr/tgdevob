@@ -49,6 +49,8 @@ func (a *App) run(ctx context.Context) error {
 	return nil
 }
 
-func (a *App) Shutdown(_ context.Context) {
+func (a *App) Shutdown(ctx context.Context) {
+	slog.InfoContext(ctx, "shutting down grpc server")
 	a.srv.GracefulStop()
+	slog.InfoContext(ctx, "grpc server stopped")
 }
