@@ -1,5 +1,27 @@
 /.idea
 .DS_Store
+
+# Claude Code
+CLAUDE.md
+
+# Proto generated files
 /proto/voice-msg-validator/pb/*
+/proto/auth/pb/*
+/proto/s3_storage/pb/*
+
+# Yandex Cloud credentials
 /authentication/*.json
+
+# Config files with secrets
+**/config/config.yaml
+
+# Test artifacts
+coverage.out
+
+# Go workspace sum (optional, often not committed)
+go.work.sum
+
+# Environment files
+*.env
+pplog.env
 
