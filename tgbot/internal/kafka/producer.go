@@ -23,31 +23,33 @@ func NewProducer(topic string, brokers []string) *Producer {
 	return &Producer{Topic: topic, Brokers: brokers}
 }
 
-// ProduceVoiceMessage TODO: come up with smt better
 func (p *Producer) ProduceVoiceMessage(ctx context.Context, update tgbotapi.Update) {
 	userrq := UserRequest{
-		UpdateId: update.UpdateID, //  idempotency guarantee
+		UpdateId: update.UpdateID,
 		User:     update.SentFrom(),
 		Request:  update.Message,
 	}
+	slog.DebugContext(ctx, "preparing voice message event", "update_id", update.UpdateID, "user_id", update.SentFrom().ID, "topic", p.Topic)
 	p.produce(ctx, userrq)
 }
 
 func (p *Producer) produce(ctx context.Context, message any) {
 	bytes, err := json.Marshal(message)
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to marshal voice worker", "error", err)
+		slog.ErrorContext(ctx, "failed to marshal message payload", "err", err)
+		return
 	}
+	slog.DebugContext(ctx, "message payload serialized", "bytes", len(bytes))
 
-	err = p.pushRequestToQueue(ctx, bytes)
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to push request to queue", "error", err)
+	if err = p.pushRequestToQueue(ctx, bytes); err != nil {
+		slog.ErrorContext(ctx, "failed to push message to kafka", "topic", p.Topic, "err", err)
 	}
 }
 
 func (p *Producer) pushRequestToQueue(ctx context.Context, message []byte) error {
 	client, err := createProducer(p.Brokers)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to create kafka producer", "brokers", p.Brokers, "err", err)
 		return err
 	}
 	defer client.Close()
@@ -59,11 +61,11 @@ func (p *Producer) pushRequestToQueue(ctx context.Context, message []byte) error
 
 	partition, offset, err := client.SendMessage(msg)
 	if err != nil {
-		// TODO: retry logic needed
+		slog.ErrorContext(ctx, "failed to send message to kafka", "topic", p.Topic, "err", err)
 		return err
 	}
 
-	slog.InfoContext(ctx, "Successfully sent worker", "partition", partition, "offset", offset)
+	slog.InfoContext(ctx, "voice message event published", "topic", p.Topic, "partition", partition, "offset", offset)
 	return nil
 }
 
