@@ -25,6 +25,7 @@ func LoadConfig(path string) *Config {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(path)
+	viper.AddConfigPath("voice-msg-validator/" + path)
 
 	viper.AutomaticEnv()
 
