@@ -19,43 +19,45 @@ func NewHandler(cfg config.Config) *Handler {
 
 func (h *Handler) ProcessUpdate(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
 	if update.Message == nil {
-		slog.InfoContext(ctx, "Update does not contain a worker")
+		slog.DebugContext(ctx, "update contains no message, skipping", "update_id", update.UpdateID)
 		return
 	}
 
 	if update.Message.Voice != nil {
-		slog.InfoContext(ctx, "Update has a voice worker")
 		ctx = logger.WithLogUserName(ctx, update.Message.From.UserName)
 		ctx = logger.WithLogUserID(ctx, update.Message.From.ID)
 		ctx = logger.WithLogFileID(ctx, update.Message.Voice.FileID)
+		slog.InfoContext(ctx, "voice message received", "duration_sec", update.Message.Voice.Duration, "file_size", update.Message.Voice.FileSize)
 		h.handleVoiceMessage(ctx, update)
 		return
 	}
 
 	if update.Message.Text != "" {
-		slog.InfoContext(ctx, "Update has a text worker")
 		ctx = logger.WithLogUserName(ctx, update.Message.From.UserName)
+		ctx = logger.WithLogUserID(ctx, update.Message.From.ID)
+		slog.InfoContext(ctx, "text message received", "chat_id", update.Message.Chat.ID)
 		h.handleTextMessage(ctx, update, bot)
 		return
 	}
 
-	slog.InfoContext(ctx, "Unrecognized worker type", "update", update)
+	slog.WarnContext(ctx, "unrecognized message type, skipping", "update_id", update.UpdateID, "chat_id", update.Message.Chat.ID)
 }
 
 func (h *Handler) handleVoiceMessage(ctx context.Context, update tgbotapi.Update) {
 	producer := kafka.NewProducer("tg_requests", []string{"localhost:9092"})
-	slog.DebugContext(ctx, "Ready to produce a msg")
+	slog.DebugContext(ctx, "publishing voice message event to kafka", "topic", "tg_requests", "update_id", update.UpdateID)
 	producer.ProduceVoiceMessage(ctx, update)
 }
 
-// stub
 func (h *Handler) handleTextMessage(ctx context.Context, update tgbotapi.Update, bot *tgbotapi.BotAPI) {
-	slog.InfoContext(ctx, "Received worker", "from", update.Message.From.UserName, "worker", update.Message.Text)
+	slog.DebugContext(ctx, "sending sticker response", "chat_id", update.Message.Chat.ID)
 
 	stickerID := "CAACAgIAAxkBAAEPVdJoMI0T572X6QjdE0rIKPdp-uQgWwACYQADUomRI5wSPlG4RvGWNgQ"
 	sticker := tgbotapi.NewSticker(update.Message.Chat.ID, tgbotapi.FileID(stickerID))
 
 	if _, err := bot.Send(sticker); err != nil {
-		slog.ErrorContext(logger.ErrorCtx(ctx, err), "Error sending sticker")
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to send sticker", "chat_id", update.Message.Chat.ID, "err", err)
+		return
 	}
+	slog.InfoContext(ctx, "sticker sent successfully", "chat_id", update.Message.Chat.ID)
 }

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/IBM/sarama"
-	"github.com/mefourr/tgdevob/msg/voice/validator/pkg/logger"
+	"github.com/mefourr/tgdevob/tgbot/pkg/logger"
 	"github.com/mefourr/tgdevob/tgbot/internal/kafka/consumer/startup"
 	"golang.org/x/net/context"
 	"log/slog"
@@ -42,11 +42,11 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				slog.InfoContext(session.Context(), "worker channel was closed")
+				slog.InfoContext(session.Context(), "message channel closed, stopping consumer claim", "topic", claim.Topic(), "partition", claim.Partition())
 				return nil
 			}
 
-			slog.DebugContext(session.Context(), "Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			slog.DebugContext(session.Context(), "message claimed", "topic", message.Topic, "partition", message.Partition, "offset", message.Offset, "timestamp", message.Timestamp)
 
 			//_ = c.controller.Process(context.Background(), message)
 			session.MarkMessage(message, "")
@@ -80,10 +80,10 @@ func (c *Consumer) Consume(ctx context.Context) error {
 		for {
 			if err := client.Consume(ctx, []string{c.Topic}, c); err != nil {
 				if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-					slog.ErrorContext(logger.ErrorCtx(ctx, err), "consumer group closed by:", err)
+					slog.InfoContext(ctx, "consumer group closed", "topic", c.Topic)
 					return
 				}
-				slog.ErrorContext(logger.ErrorCtx(ctx, err), "error from consumer")
+				slog.ErrorContext(logger.ErrorCtx(ctx, err), "consumer group session error", "topic", c.Topic, "err", err)
 			}
 
 			if ctx.Err() != nil {
@@ -97,7 +97,7 @@ func (c *Consumer) Consume(ctx context.Context) error {
 
 	// Wait until the consumer session is Ready
 	<-c.bc.Ready
-	slog.InfoContext(ctx, "Sarama consumer up and running!...")
+	slog.InfoContext(ctx, "kafka consumer ready", "topic", c.Topic, "group", c.bc.Group, "brokers", c.bc.Brokers)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGINT, syscall.SIGTERM)
@@ -105,15 +105,15 @@ func (c *Consumer) Consume(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		slog.InfoContext(ctx, "terminating: context cancelled", "ctx", ctx.Err())
+		slog.InfoContext(ctx, "consumer stopping: context cancelled", "reason", ctx.Err())
 	case <-sigterm:
-		slog.InfoContext(ctx, "terminating: via signal")
+		slog.InfoContext(ctx, "consumer stopping: shutdown signal received")
 	}
 
-	cancel() // Trigger goroutine shutdown
+	cancel()
 	wg.Wait()
 
-	slog.InfoContext(ctx, "Sarama consumer shut down")
+	slog.InfoContext(ctx, "kafka consumer shutdown complete", "topic", c.Topic)
 	return nil
 }
 
