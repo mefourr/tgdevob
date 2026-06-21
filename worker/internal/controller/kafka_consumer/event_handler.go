@@ -20,12 +20,21 @@ func NewEventHandler(eventProcessor usecase.EventProcessor) *EventHandler {
 }
 
 func (h *EventHandler) Handle(ctx context.Context, msg *sarama.ConsumerMessage) error {
+	slog.DebugContext(ctx, "handling kafka message", "topic", msg.Topic, "partition", msg.Partition, "offset", msg.Offset)
+
 	m, err := parse(msg.Value)
 	if err != nil {
-		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to unmarshal eventProcessor")
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to parse kafka message", "topic", msg.Topic, "offset", msg.Offset, "err", err)
 		return err
 	}
-	return h.eventProcessor.Execute(ctx, m)
+
+	slog.DebugContext(ctx, "message parsed, executing processor", "update_id", m.UpdateId)
+	if err = h.eventProcessor.Execute(ctx, m); err != nil {
+		return err
+	}
+
+	slog.InfoContext(ctx, "message processed successfully", "topic", msg.Topic, "offset", msg.Offset, "update_id", m.UpdateId)
+	return nil
 }
 
 var ErrNoData = errors.New("no data in consumed message")
