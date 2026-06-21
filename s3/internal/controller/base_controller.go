@@ -32,7 +32,7 @@ func (c *ServerAPI) StoreAudio(ctx context.Context, in *s3_storage.TempRq) (*s3_
 	slog.InfoContext(ctx, "StoreAudio got a call", "value", in.GetSmth())
 	bucketId, err := c.cloud.CreateBucket(ctx)
 	if err != nil {
-		slog.ErrorContext(logger.ErrorCtx(ctx, err), "Error occurs while creating bucket", "err", err.Error())
+		slog.ErrorContext(logger.ErrorCtx(ctx, err), "Error occurs while creating a bucket", "err", err.Error())
 		return nil, err
 	}
 	slog.InfoContext(ctx, "Bucket created", "bucketId", bucketId)
