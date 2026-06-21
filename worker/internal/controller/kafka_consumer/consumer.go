@@ -35,14 +35,14 @@ func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim saram
 		select {
 		case message, ok := <-claim.Messages():
 			if !ok {
-				slog.InfoContext(ctx, "worker channel was closed")
+				slog.InfoContext(ctx, "message channel closed, stopping claim", "topic", claim.Topic(), "partition", claim.Partition())
 				return nil
 			}
 
-			slog.DebugContext(ctx, "consume message", "timestamp", message.Timestamp, "value", string(message.Value), "topic", message.Topic, "key", message.Key)
+			slog.DebugContext(ctx, "message claimed", "topic", message.Topic, "partition", message.Partition, "offset", message.Offset, "timestamp", message.Timestamp)
 
 			if err := c.handler.Handle(ctx, message); err != nil {
-				slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to process message", "error", err)
+				slog.ErrorContext(logger.ErrorCtx(ctx, err), "failed to process message", "topic", message.Topic, "offset", message.Offset, "err", err)
 			}
 
 			session.MarkMessage(message, "")
@@ -56,15 +56,15 @@ func (c *Consumer) Consume(ctx context.Context, group sarama.ConsumerGroup, topi
 	for {
 		if err := group.Consume(ctx, topics, c); err != nil {
 			if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-				slog.ErrorContext(logger.ErrorCtx(ctx, err), "consumer group closed by", "err", err)
+				slog.InfoContext(ctx, "consumer group closed", "topics", topics)
 				return err
 			}
-			slog.ErrorContext(logger.ErrorCtx(ctx, err), "error from consumer", "error", err)
+			slog.ErrorContext(logger.ErrorCtx(ctx, err), "consumer group session error", "topics", topics, "err", err)
 			return err
 		}
 
 		if ctx.Err() != nil {
-			slog.InfoContext(ctx, "consumer group closed by cancellation")
+			slog.InfoContext(ctx, "consumer stopping: context cancelled", "topics", topics)
 			return ctx.Err()
 		}
 

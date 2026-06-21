@@ -27,12 +27,14 @@ func (a App) MustRun(ctx context.Context, cfg config.Config) error {
 func (a App) run(ctx context.Context, cfg config.Config) error {
 	group, err := kafka_consumer.NewConsumerGroup(cfg)
 	if err != nil {
+		slog.ErrorContext(ctx, "failed to create kafka consumer group", "brokers", cfg.Kafka.BootstrapServers, "group", cfg.Kafka.Group, "err", err)
 		return err
 	}
 	defer group.Close()
+	slog.InfoContext(ctx, "kafka consumer group created", "brokers", cfg.Kafka.BootstrapServers, "group", cfg.Kafka.Group, "topics", cfg.Kafka.Topics)
 
 	wg := &sync.WaitGroup{}
-	errs := make(chan error, 1) // todo: understand why this chan is buffered
+	errs := make(chan error, 1)
 
 	wg.Add(1)
 
@@ -45,13 +47,13 @@ func (a App) run(ctx context.Context, cfg config.Config) error {
 	}()
 
 	<-a.con.Ready
-	slog.InfoContext(ctx, "Sarama consumer up and running!...")
+	slog.InfoContext(ctx, "kafka consumer ready", "topics", cfg.Kafka.Topics, "group", cfg.Kafka.Group)
 
 	select {
 	case <-ctx.Done():
-		slog.InfoContext(ctx, "kafka_consumer.Consume: context cancelled")
+		slog.InfoContext(ctx, "consumer stopping: context cancelled")
 	case err = <-errs:
-		slog.InfoContext(ctx, "kafka_consumer.Consume: sarama consumer error", "err", err)
+		slog.ErrorContext(ctx, "consumer stopped with error", "err", err)
 	}
 
 	wg.Wait()
@@ -60,5 +62,5 @@ func (a App) run(ctx context.Context, cfg config.Config) error {
 
 func (a App) Shutdown(ctx context.Context, closed chan error) {
 	<-closed
-	slog.InfoContext(ctx, "App:Shutdown Sarama consumer successfully closed")
+	slog.InfoContext(ctx, "kafka consumer shutdown complete")
 }
